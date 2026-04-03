@@ -1,0 +1,40 @@
+# ── 환경변수  ──
+.env
+server/.env
+client/.env
+
+# ── 의존성 ──
+node_modules/
+server/node_modules/
+client/node_modules/
+
+# ── 빌드 결과물 ──
+client/dist/
+server/dist/
+
+# ── 업로드 임시 파일 ──
+server/uploads/
+
+# ── Prisma ──
+server/prisma/dev.db
+server/prisma/dev.db-journal
+
+# ── 로그 ──
+*.log
+npm-debug.log*
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ──
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ── 기타 ──
+*.local

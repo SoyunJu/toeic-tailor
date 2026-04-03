@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id         Int      @id @default(autoincrement())
+  name       String
+  totalScore Int?
+  lcScore    Int?
+  rcScore    Int?
+  level      Level?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  scores    ScoreRecord[]
+  workbooks Workbook[]
+}
+
+model ScoreRecord {
+  id        Int      @id @default(autoincrement())
+  studentId Int
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  totalScore Int
+  lcScore    Int
+  rcScore    Int
+
+  part1Correct Int?
+  part2Correct Int?
+  part3Correct Int?
+  part4Correct Int?
+  part5Correct Int?
+  part6Correct Int?
+  part7Correct Int?
+
+  takenAt   DateTime
+  source    String?
+  createdAt DateTime @default(now())
+}
+
+enum Level {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+model Question {
+  id           Int          @id @default(autoincrement())
+  part         Int
+  questionType QuestionType
+  difficulty   Difficulty
+  content      String
+  options      Json?
+  answer       String
+  explanation  String?
+  source       String?
+  createdAt    DateTime     @default(now())
+
+  workbookQuestions WorkbookQuestion[]
+}
+
+enum QuestionType {
+  PHOTO_DESCRIPTION
+  SHORT_RESPONSE
+  SHORT_CONVERSATION
+  LONG_TALK
+  GRAMMAR
+  VOCABULARY
+  SHORT_PASSAGE_FILL
+  SINGLE_PASSAGE
+  DOUBLE_PASSAGE
+  TRIPLE_PASSAGE
+}
+
+enum Difficulty {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Workbook {
+  id          Int      @id @default(autoincrement())
+  studentId   Int
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  bookUid     String?
+  bookStatus  String   @default("DRAFT")
+  orderUid    String?
+  orderStatus String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  questions   WorkbookQuestion[]
+}
+
+model WorkbookQuestion {
+  id         Int      @id @default(autoincrement())
+  workbookId Int
+  workbook   Workbook @relation(fields: [workbookId], references: [id], onDelete: Cascade)
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id])
+  pageOrder  Int
+
+  @@unique([workbookId, questionId])
+}
