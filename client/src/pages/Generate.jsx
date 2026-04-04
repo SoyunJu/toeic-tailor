@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { getStudents } from '../api';
-import { generateBatch } from '../api';
+import { useNavigate }         from 'react-router-dom';
+import { getStudents }         from '../api';
+import { generateBatch }       from '../api';
 
 const CLASS_NAME_OPTIONS = [
     { value: '',           label: '전체 반' },
@@ -31,6 +32,40 @@ export default function Generate() {
     const [loading,   setLoading]   = useState(false);
     const [progress,  setProgress]  = useState({}); // { [studentId]: { status, message } }
     const [summary,   setSummary]   = useState(null);
+
+    const navigate = useNavigate();
+
+    async function handleGenerate() {
+        if (!selected.size) return;
+        setLoading(true);
+        setSummary(null);
+
+        const init = {};
+        selected.forEach(id => { init[id] = { status: 'idle', name: students.find(s => s.id === id)?.name }; });
+        setProgress(init);
+
+        await generateBatch([...selected], (event) => {
+            if (event.type === 'start') {
+                setProgress(p => ({ ...p, [event.studentId]: { ...p[event.studentId], status: 'start' } }));
+            } else if (event.type === 'done') {
+                setProgress(p => ({ ...p, [event.studentId]: {
+                        ...p[event.studentId], status: 'done',
+                        workbookId: event.workbookId, bookUid: event.bookUid, summary: event.summary,
+                    }}));
+            } else if (event.type === 'error') {
+                setProgress(p => ({ ...p, [event.studentId]: {
+                        ...p[event.studentId], status: 'error', message: event.message,
+                    }}));
+            } else if (event.type === 'complete') {
+                setSummary(event);
+                setLoading(false);
+                // 완료 후 2초 뒤 주문 목록으로 이동
+                setTimeout(() => navigate('/orders'), 2000);
+            }
+        });
+    }
+
+
 
     useEffect(() => {
         getStudents({ className, level })
