@@ -2,7 +2,7 @@ const express     = require('express');
 const router      = express.Router();
 const { prisma }                          = require('../lib/prisma');
 const { generateWorkbook, MIN_PAGES, COVER_PAGES } = require('../services/workbookGenerator');
-const { publishWorkbook }                 = require('../services/sweetbookClient');
+const { publishWorkbook, publishBatchWorkbook } = require('../services/sweetbookClient');
 const PDFDocument = require('pdfkit');
 const archiver    = require('archiver');
 
@@ -40,55 +40,98 @@ async function trySweetBookPublish({ student, workbook }) {
 
 // ─── POST /api/workbooks/generate ────────────────────────────
 // 단일 학생 → singleMode: 최대한 문제 많이 뽑아 24p 채우기
-router.post('/generate', async (req, res) => {
+router.post('/generate-batch', async (req, res) => {
     try {
-        const { studentId } = req.body;
-
-        if (!studentId) {
-            return res.status(400).json({ success: false, message: 'studentId가 필요합니다.' });
+        const { studentIds } = req.body;
+        if (!studentIds?.length) {
+            return res.status(400).json({ success: false, message: 'studentIds가 필요합니다.' });
         }
 
-        const student = await prisma.student.findUnique({ where: { id: parseInt(studentId) } });
-        if (!student) {
-            return res.status(404).json({ success: false, message: '학생을 찾을 수 없습니다.' });
+        res.setHeader('Content-Type',  'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection',    'keep-alive');
+        res.flushHeaders();
+
+        const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+
+        // 1단계: 각 학생별 문제집 DB 생성
+        const workbookResults = [];
+        let failed = 0;
+
+        for (const studentId of studentIds) {
+            const student = await prisma.student.findUnique({ where: { id: parseInt(studentId) } });
+            if (!student) {
+                send({ type: 'error', studentId, message: '학생을 찾을 수 없습니다.' });
+                failed++;
+                continue;
+            }
+
+            send({ type: 'start', studentId, name: student.name });
+            console.log(`[BATCH] DB 생성: ${student.name}`);
+
+            try {
+                const { workbook, analysis } = await generateWorkbook(
+                    parseInt(studentId),
+                    { singleMode: false },
+                );
+                workbookResults.push({
+                    student,
+                    workbook,
+                    analysis,
+                    questions: workbook.questions.map(wq => wq.question),
+                });
+                send({ type: 'progress', studentId, name: student.name, message: '문제집 구성 완료' });
+            } catch (err) {
+                console.error(`[BATCH] DB 생성 실패: ${student.name} /`, err.message);
+                send({ type: 'error', studentId, name: student.name, message: err.message });
+                failed++;
+            }
         }
 
-        console.log(`[GENERATE] 단일 생성 시작: ${student.name} (singleMode=true)`);
+        // 2단계: SweetBook 배치 발행 (책 1권에 합산)
+        let bookUid = null;
+        if (workbookResults.length > 0) {
+            send({ type: 'sweetbook_start', message: 'SweetBook 발행 시작...' });
+            try {
+                const published = await publishBatchWorkbook({
+                    students: workbookResults.map(r => ({
+                        name:      r.student.name,
+                        level:     r.student.level,
+                        totalScore: r.student.totalScore,
+                        questions: r.questions,
+                    })),
+                });
+                bookUid = published.bookUid;
+                console.log(`[BATCH] SweetBook 완료: bookUid=${bookUid}`);
 
-        const { workbook, analysis, criteria } = await generateWorkbook(
-            parseInt(studentId),
-            { singleMode: true },
-        );
+                // 모든 workbook에 동일한 bookUid 저장
+                for (const r of workbookResults) {
+                    await prisma.workbook.update({
+                        where: { id: r.workbook.id },
+                        data:  { bookUid, bookStatus: 'FINALIZED' },
+                    });
+                }
+            } catch (sbErr) {
+                console.error(`[BATCH] SweetBook 실패:`, sbErr.message);
+                send({ type: 'sweetbook_error', message: sbErr.message });
+            }
+        }
 
-        console.log(`[GENERATE] 문제집 DB 저장 완료: workbookId=${workbook.id} / 문제수=${workbook.questions.length}`);
-
-        const bookUid = await trySweetBookPublish({ student, workbook });
-
-        res.json({
-            success: true,
-            message: '문제집 생성 완료',
-            data: {
-                workbookId:      workbook.id,
+        // 3단계: 완료 이벤트
+        for (const r of workbookResults) {
+            send({
+                type:       'done',
+                studentId:  r.student.id,
+                name:       r.student.name,
+                workbookId: r.workbook.id,
                 bookUid,
-                studentId,
-                totalQuestions:  workbook.questions.length,
-                weakPartNums:    criteria.weakPartNums,
-                difficultyRatio: criteria.difficultyRatio,
-                analysis,
-                questions: workbook.questions.map(wq => ({
-                    pageOrder:    wq.pageOrder,
-                    part:         wq.question.part,
-                    questionType: wq.question.questionType,
-                    difficulty:   wq.question.difficulty,
-                    content:      wq.question.content,
-                    options:      wq.question.options,
-                    answer:       wq.question.answer,
-                    explanation:  wq.question.explanation,
-                })),
-            },
-        });
+                summary:    r.analysis?.summary,
+            });
+        }
+
+        send({ type: 'complete', succeeded: workbookResults.length, failed, total: studentIds.length });
+        res.end();
     } catch (err) {
-        console.error(`[GENERATE] 에러:`, err.message);
         res.status(500).json({ success: false, message: err.message });
     }
 });
@@ -134,68 +177,6 @@ router.get('/:id', async (req, res) => {
                 })),
             },
         });
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
-    }
-});
-
-// ─── POST /api/workbooks/generate-batch ──────────────────────
-// 다수 학생 → singleMode: false (기본 문제 수 유지, 부족분 패딩)
-router.post('/generate-batch', async (req, res) => {
-    try {
-        const { studentIds } = req.body;
-        if (!studentIds?.length) {
-            return res.status(400).json({ success: false, message: 'studentIds가 필요합니다.' });
-        }
-
-        res.setHeader('Content-Type',  'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection',    'keep-alive');
-        res.flushHeaders();
-
-        const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
-
-        let succeeded = 0, failed = 0;
-
-        for (const studentId of studentIds) {
-            const student = await prisma.student.findUnique({ where: { id: parseInt(studentId) } });
-            if (!student) {
-                send({ type: 'error', studentId, message: '학생을 찾을 수 없습니다.' });
-                failed++;
-                continue;
-            }
-
-            send({ type: 'start', studentId, name: student.name });
-            console.log(`[BATCH] 시작: ${student.name} (${studentIds.indexOf(studentId) + 1}/${studentIds.length})`);
-
-            try {
-                const { workbook, analysis } = await generateWorkbook(
-                    parseInt(studentId),
-                    { singleMode: false },
-                );
-
-                console.log(`[BATCH] 문제집 DB 저장: ${student.name} / workbookId=${workbook.id} / 문제수=${workbook.questions.length}`);
-
-                const bookUid = await trySweetBookPublish({ student, workbook });
-
-                send({
-                    type:       'done',
-                    studentId,
-                    name:       student.name,
-                    workbookId: workbook.id,
-                    bookUid,
-                    summary:    analysis?.summary,
-                });
-                succeeded++;
-            } catch (err) {
-                console.error(`[BATCH] 에러: ${student.name} /`, err.message);
-                send({ type: 'error', studentId, name: student.name, message: err.message });
-                failed++;
-            }
-        }
-
-        send({ type: 'complete', succeeded, failed, total: studentIds.length });
-        res.end();
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

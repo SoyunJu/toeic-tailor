@@ -5,15 +5,15 @@ const sbClient = new SweetbookClient({
     environment: 'sandbox',
 });
 
-const SPEC_UID      = process.env.SWEETBOOK_BOOK_SPEC_UID      || 'PHOTOBOOK_A4_SC';
-const TPL_UID       = process.env.SWEETBOOK_CONTENT_TEMPLATE_UID || '5tlNCJyTlfiE';
-const COVER_TPL_UID = process.env.SWEETBOOK_COVER_TEMPLATE_UID || '75HruEK3EnG5';
+const SPEC_UID      = process.env.SWEETBOOK_BOOK_SPEC_UID          || 'PHOTOBOOK_A4_SC';
+const TPL_UID       = process.env.SWEETBOOK_CONTENT_TEMPLATE_UID   || '5tlNCJyTlfiE';
+const COVER_TPL_UID = process.env.SWEETBOOK_COVER_TEMPLATE_UID     || '75HruEK3EnG5';
 
-// 환경변수
+// 환경변수 기준
 const MIN_PAGES   = parseInt(process.env.WORKBOOK_MIN_PAGES) || 24;
 const COVER_PAGES = 1;
 
-// 토익 필수 어휘
+// 패딩용 토익 필수 어휘
 const VOCAB_LIST = [
     'accomplish: 달성하다 / accumulate: 축적하다 / acknowledge: 인정하다',
     'adequate: 적절한 / adjacent: 인접한 / administration: 관리, 행정',
@@ -32,7 +32,7 @@ const VOCAB_LIST = [
     'terminate: 종료하다 / thorough: 철저한 / versatile: 다재다능한',
 ];
 
-// 문제 텍스트 포맷
+// 텍스트 포맷
 function formatQuestionText(q, index) {
     const options     = Array.isArray(q.options) ? q.options.join('\n') : '';
     const explanation = q.explanation ? `\n[해설] ${q.explanation}` : '';
@@ -111,16 +111,15 @@ async function cancelOrder({ orderUid, cancelReason }) {
     return await sbClient.orders.cancel(orderUid, cancelReason);
 }
 
-// 전체 플로우: 책생성 → 표지 → 콘텐츠 반복 → 최종화
+// ─── 단일 학생용: 책 1권, 24p 보장 ────────────────────────────
 async function publishWorkbook({ title, externalRef, questions, studentName = '' }) {
-    const { bookUid } = await createBook({ title, externalRef });
-    console.log(`[PUBLISH] 책 생성: bookUid=${bookUid} / 문제수=${questions.length}`);
+    const ref         = `${externalRef}-${Date.now()}`; // 중복 방지
+    const { bookUid } = await createBook({ title, externalRef: ref });
+    console.log(`[PUBLISH] 책 생성: bookUid=${bookUid}`);
 
-    // 표지 추가
     await addCover({ bookUid, title, studentName });
     console.log(`[PUBLISH] 표지 추가 완료`);
 
-    // 문제 페이지 추가
     for (let i = 0; i < questions.length; i++) {
         const text = formatQuestionText(questions[i], i + 1);
         await addContent({ bookUid, text, studentName, title: `Q${i + 1}` });
@@ -128,14 +127,11 @@ async function publishWorkbook({ title, externalRef, questions, studentName = ''
     }
     console.log('');
 
-    // 최소 페이지 미달 시 패딩
-    const currentPages = questions.length + COVER_PAGES;
-    const shortage     = MIN_PAGES - currentPages;
-    console.log(`[PUBLISH] 페이지 체크: currentPages=${currentPages} / MIN_PAGES=${MIN_PAGES} / shortage=${shortage}`);
+    // 패딩
+    const shortage = MIN_PAGES - (questions.length + COVER_PAGES);
+    console.log(`[PUBLISH] 페이지 체크: ${questions.length + COVER_PAGES}p / 최소 ${MIN_PAGES}p / 부족 ${shortage}p`);
 
     if (shortage > 0) {
-        console.log(`[PUBLISH] 패딩 시작: ${shortage}p 추가`);
-
         const vocabPages = Math.min(shortage, VOCAB_LIST.length);
         for (let i = 0; i < vocabPages; i++) {
             await addContent({
@@ -144,9 +140,8 @@ async function publishWorkbook({ title, externalRef, questions, studentName = ''
                 studentName,
                 title:       `어휘 ${i + 1}`,
             });
-            console.log(`[PUBLISH] 단어장 페이지 ${i + 1}/${vocabPages} 추가`);
+            console.log(`[PUBLISH] 단어장 ${i + 1}/${vocabPages} 추가`);
         }
-
         const remaining = shortage - vocabPages;
         for (let i = 0; i < remaining; i++) {
             await addContent({ bookUid, text: ' ', studentName, title: ' ' });
@@ -154,13 +149,74 @@ async function publishWorkbook({ title, externalRef, questions, studentName = ''
         }
     }
 
-    console.log(`[PUBLISH] 최종화 시작: bookUid=${bookUid}`);
+    console.log(`[PUBLISH] 최종화 시작`);
     const result = await finalizeBook(bookUid);
     console.log(`[PUBLISH] 최종화 완료: pageCount=${result.pageCount}`);
     return { bookUid, ...result };
 }
 
+// ─── 다수 학생 배치용: 책 1권에 전체 합산 후 finalization 1번 ──
+async function publishBatchWorkbook({ students }) {
+    const title       = `TOEIC 맞춤 문제집 (${students.length}명)`;
+    const externalRef = `batch-${Date.now()}`;
+
+    const { bookUid } = await createBook({ title, externalRef });
+    console.log(`[BATCH_PUBLISH] 책 생성: bookUid=${bookUid}`);
+
+    await addCover({ bookUid, title, studentName: students.map(s => s.name).join(', ') });
+    console.log(`[BATCH_PUBLISH] 표지 추가 완료`);
+
+    let totalContentPages = 0;
+
+    for (const student of students) {
+        // 학생 구분 헤더 페이지 (새 페이지에서 시작)
+        await addContent({
+            bookUid,
+            text:        `[ ${student.name} 맞춤 문제 ]\nLevel: ${student.level}  |  Score: ${student.totalScore}`,
+            studentName: student.name,
+            title:       student.name,
+        });
+        totalContentPages++;
+        console.log(`[BATCH_PUBLISH] ${student.name} 헤더 추가`);
+
+        for (let i = 0; i < student.questions.length; i++) {
+            const text = formatQuestionText(student.questions[i], i + 1);
+            await addContent({ bookUid, text, studentName: student.name, title: `Q${i + 1}` });
+            process.stdout.write(`\r[BATCH_PUBLISH] ${student.name} 문제 ${i + 1}/${student.questions.length}`);
+            totalContentPages++;
+        }
+        console.log('');
+    }
+
+    // 패딩
+    const shortage = MIN_PAGES - (totalContentPages + COVER_PAGES);
+    console.log(`[BATCH_PUBLISH] 페이지 체크: ${totalContentPages + COVER_PAGES}p / 최소 ${MIN_PAGES}p / 부족 ${shortage}p`);
+
+    if (shortage > 0) {
+        const vocabPages = Math.min(shortage, VOCAB_LIST.length);
+        for (let i = 0; i < vocabPages; i++) {
+            await addContent({
+                bookUid,
+                text:        `[ 토익 필수 어휘 ]\n\n${VOCAB_LIST[i]}`,
+                studentName: '',
+                title:       `어휘 ${i + 1}`,
+            });
+            console.log(`[BATCH_PUBLISH] 단어장 ${i + 1}/${vocabPages} 추가`);
+        }
+        const remaining = shortage - vocabPages;
+        for (let i = 0; i < remaining; i++) {
+            await addContent({ bookUid, text: ' ', studentName: '', title: ' ' });
+        }
+    }
+
+    console.log(`[BATCH_PUBLISH] 최종화 시작`);
+    const result = await finalizeBook(bookUid);
+    console.log(`[BATCH_PUBLISH] 최종화 완료: pageCount=${result.pageCount}`);
+    return { bookUid, ...result };
+}
+
 module.exports = {
-    createBook, addCover, addContent, finalizeBook, publishWorkbook,
+    createBook, addCover, addContent, finalizeBook,
+    publishWorkbook, publishBatchWorkbook,
     createOrder, getOrder, cancelOrder,
 };
