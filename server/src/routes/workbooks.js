@@ -1,7 +1,8 @@
 const express  = require('express');
 const router   = express.Router();
-const { prisma }           = require('../lib/prisma');
-const { generateWorkbook } = require('../services/workbookGenerator');
+const { prisma }             = require('../lib/prisma');
+const { generateWorkbook }   = require('../services/workbookGenerator');
+const { publishWorkbook }    = require('../services/sweetbookClient');
 
 // POST /api/workbooks/generate
 router.post('/generate', async (req, res) => {
@@ -14,14 +15,35 @@ router.post('/generate', async (req, res) => {
 
         const { workbook, analysis, criteria } = await generateWorkbook(parseInt(studentId));
 
+        // SweetBook 책 생성 + 최종화
+        let bookUid = null;
+        try {
+            const student = await prisma.student.findUnique({ where: { id: parseInt(studentId) } });
+            const published = await publishWorkbook({
+                title:       `${student.name} 맞춤 문제집`,
+                externalRef: `workbook-${workbook.id}`,
+                questions:   workbook.questions.map(wq => wq.question),
+            });
+            bookUid = published.bookUid;
+
+            await prisma.workbook.update({
+                where: { id: workbook.id },
+                data:  { bookUid, bookStatus: 'FINALIZED' },
+            });
+        } catch (sweetbookErr) {
+            // SweetBook 실패해도 문제집 생성 자체는 성공 처리
+            console.error('SweetBook 연동 실패:', sweetbookErr.message);
+        }
+
         res.json({
             success: true,
             message: '문제집 생성 완료',
             data: {
-                workbookId:   workbook.id,
+                workbookId:      workbook.id,
+                bookUid,
                 studentId,
-                totalQuestions: workbook.questions.length,
-                weakPartNums:   criteria.weakPartNums,
+                totalQuestions:  workbook.questions.length,
+                weakPartNums:    criteria.weakPartNums,
                 difficultyRatio: criteria.difficultyRatio,
                 analysis,
                 questions: workbook.questions.map(wq => ({
@@ -49,7 +71,7 @@ router.get('/:id', async (req, res) => {
         const workbook = await prisma.workbook.findUnique({
             where: { id },
             include: {
-                student: { select: { id: true, name: true, level: true, totalScore: true } },
+                student:   { select: { id: true, name: true, level: true, totalScore: true } },
                 questions: {
                     include: { question: true },
                     orderBy: { pageOrder: 'asc' },
@@ -64,11 +86,11 @@ router.get('/:id', async (req, res) => {
         res.json({
             success: true,
             data: {
-                id:           workbook.id,
-                bookUid:      workbook.bookUid,
-                bookStatus:   workbook.bookStatus,
-                orderStatus:  workbook.orderStatus,
-                student:      workbook.student,
+                id:             workbook.id,
+                bookUid:        workbook.bookUid,
+                bookStatus:     workbook.bookStatus,
+                orderStatus:    workbook.orderStatus,
+                student:        workbook.student,
                 totalQuestions: workbook.questions.length,
                 questions: workbook.questions.map(wq => ({
                     pageOrder:    wq.pageOrder,
