@@ -20,7 +20,7 @@ export const getQuestions    = (params) => api.get('/questions', { params });
 export const updateQuestion  = (id, data) => api.put(`/questions/${id}`, data);
 export const deleteQuestion  = (id) => api.delete(`/questions/${id}`);
 
-// 문제집
+// 기출
 export const generateWorkbook = (studentId) =>
     api.post('/workbooks/generate', { studentId });
 export const getWorkbook = (id) => api.get(`/workbooks/${id}`);
@@ -62,3 +62,10 @@ export const generateBatch = (studentIds, onEvent) => {
         }).catch(reject);
     });
 };
+
+// PDF 다운로드
+export const downloadWorkbookPdf = (id) =>
+    api.get(`/workbooks/${id}/pdf`, { responseType: 'blob' });
+
+export const downloadWorkbooksZip = (workbookIds) =>
+    api.post('/workbooks/pdf-zip', { workbookIds }, { responseType: 'blob' });
