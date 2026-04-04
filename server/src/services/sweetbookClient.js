@@ -133,8 +133,8 @@ async function publishWorkbook({ title, externalRef, questions, studentName = ''
     console.log('');
 
     // 패딩
-    const shortage = MIN_PAGES - (questions.length + COVER_PAGES);
-    console.log(`[PUBLISH] 페이지 체크: ${questions.length + COVER_PAGES}p / 최소 ${MIN_PAGES}p / 부족 ${shortage}p`);
+    const shortage = MIN_PAGES - Math.ceil(questions.length / QUESTIONS_PER_PAGE);
+    console.log(`[PUBLISH] 내지 페이지 체크: ${Math.ceil(questions.length / QUESTIONS_PER_PAGE)}p / 최소 ${MIN_PAGES}p / 부족 ${shortage}p`);
 
     if (shortage > 0) {
         const vocabPages = Math.min(shortage, VOCAB_LIST.length);
@@ -196,8 +196,8 @@ async function publishBatchWorkbook({ students }) {
     }
 
     // 패딩
-    const shortage = MIN_PAGES - (totalContentPages + COVER_PAGES);
-    console.log(`[BATCH_PUBLISH] 페이지 체크: ${totalContentPages + COVER_PAGES}p / 최소 ${MIN_PAGES}p / 부족 ${shortage}p`);
+    const shortage = MIN_PAGES - totalContentPages;
+    console.log(`[BATCH_PUBLISH] 내지 페이지 체크: ${totalContentPages}p / 최소 ${MIN_PAGES}p / 부족 ${shortage}p`);
 
     if (shortage > 0) {
         const vocabPages = Math.min(shortage, VOCAB_LIST.length);
