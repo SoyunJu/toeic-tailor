@@ -8,17 +8,35 @@ datasource db {
 }
 
 model Student {
-  id         Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
   name       String
   totalScore Int?
   lcScore    Int?
   rcScore    Int?
   level      Level?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+
+  // 수강 정보
+  className  ClassName?
+  classType  ClassType?
+  enrolledAt DateTime?
+  expiresAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   scores    ScoreRecord[]
   workbooks Workbook[]
+}
+
+enum ClassName {
+  TARGET_600 // 600목표반
+  TARGET_800 // 800목표반
+  HIGH_SCORE // 고득점반
+}
+
+enum ClassType {
+  WEEKDAY // 평일반
+  WEEKEND // 주말반
 }
 
 model ScoreRecord {

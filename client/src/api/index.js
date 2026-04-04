@@ -3,8 +3,10 @@ import axios from 'axios';
 const api = axios.create({ baseURL: '/api' });
 
 // 학생
-export const getStudents = (params) => api.get('/students', { params });
-export const getStudent  = (id)     => api.get(`/students/${id}`);
+export const getStudents    = (params) => api.get('/students', { params });
+export const getStudent     = (id)     => api.get(`/students/${id}`);
+export const updateStudent  = (id, data) => api.put(`/students/${id}`, data);
+export const deleteStudent  = (id)     => api.delete(`/students/${id}`);
 
 // 업로드
 export const uploadScores = (file) => {
@@ -19,7 +21,6 @@ export const generateWorkbook = (studentId) =>
 export const getWorkbook = (id) => api.get(`/workbooks/${id}`);
 
 // 주문
-export const createOrder  = (data) => api.post('/orders', data);
-export const getOrders    = ()     => api.get('/orders');
-export const cancelOrder  = (id, cancelReason) =>
-    api.post(`/orders/${id}/cancel`, { cancelReason });
+export const createOrder = (data)              => api.post('/orders', data);
+export const getOrders   = ()                  => api.get('/orders');
+export const cancelOrder = (id, cancelReason)  => api.post(`/orders/${id}/cancel`, { cancelReason });

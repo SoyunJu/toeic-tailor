@@ -77,4 +77,59 @@ res.status(500).json({ success: false, message: err.message });
 }
 });
 
+const path = require('path');
+const ai   = require('../ai/aiProvider');
+
+const pdfUpload = multer({
+    storage: multer.memoryStorage(),
+    limits:  { fileSize: 50 * 1024 * 1024 }, // 50MB
+    fileFilter: (_req, file, cb) => {
+        file.mimetype === 'application/pdf'
+            ? cb(null, true)
+            : cb(new Error('PDF 파일만 업로드 가능합니다.'));
+    },
+});
+
+
+// POST /api/upload/exam  — RC 기출 PDF 업로드 + AI 분석
+router.post('/exam', pdfUpload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: '파일이 없습니다.' });
+        }
+
+        const source = req.file.originalname;
+
+        // PDF 텍스트 추출
+        const pdfParse = require('pdf-parse');
+        const pdfData  = await pdfParse(req.file.buffer);
+        const text     = pdfData.text;
+
+        if (!text || text.trim().length < 50) {
+            return res.status(400).json({ success: false, message: 'PDF에서 텍스트를 추출할 수 없습니다. 스캔본일 경우 OCR이 필요합니다.' });
+        }
+
+        // AI로 문제 추출 + 태깅
+        const extracted = await ai.extractQuestionsFromText({ text, source });
+
+        // DB 저장
+        let saved = 0;
+        for (const q of extracted) {
+            try {
+                await prisma.question.create({ data: { ...q, source } });
+                saved++;
+            } catch {
+                // 중복 등 무시 TODO: 중복 제거 upsert 필요 여부 확인
+            }
+        }
+        res.json({
+            success: true,
+            message: `기출 분석 완료`,
+            data: { extracted: extracted.length, saved, source },
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;

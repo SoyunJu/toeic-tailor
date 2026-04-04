@@ -33,42 +33,307 @@ return s;
 }
 
 // ─── 학생 데이터 (30명) ─────────────────────────────────
-// { name, lc, rc, weak: 취약파트번호(1~7) }
 const RAW_STUDENTS = [
-// BEGINNER (~300~499)
-{ name: '김민준', lc: 150, rc: 160, weak: 5 },
-{ name: '이서연', lc: 195, rc: 225, weak: 7 },
-{ name: '박지우', lc: 210, rc: 240, weak: 6 },
-{ name: '최다은', lc: 165, rc: 175, weak: 5 },
-{ name: '정유진', lc: 230, rc: 250, weak: 7 },
-// INTERMEDIATE (~500~699)
-{ name: '강민서', lc: 245, rc: 265, weak: 7 },
-{ name: '윤지호', lc: 260, rc: 290, weak: 5 },
-{ name: '임수빈', lc: 275, rc: 305, weak: 6 },
-{ name: '조현우', lc: 290, rc: 320, weak: 3 },
-{ name: '한나연', lc: 300, rc: 330, weak: 7 },
-{ name: '신동현', lc: 310, rc: 335, weak: 5 },
-{ name: '오세린', lc: 315, rc: 345, weak: 6 },
-{ name: '권민재', lc: 320, rc: 350, weak: 2 },
-{ name: '문채원', lc: 250, rc: 270, weak: 7 },
-{ name: '노준혁', lc: 330, rc: 350, weak: 5 },
-// ADVANCED (~700~849)
-{ name: '백서윤', lc: 350, rc: 360, weak: 7 },
-{ name: '허재원', lc: 360, rc: 370, weak: 5 },
-{ name: '남지민', lc: 365, rc: 385, weak: 6 },
-{ name: '류하은', lc: 375, rc: 395, weak: 7 },
-{ name: '심민호', lc: 385, rc: 405, weak: 3 },
-{ name: '전은지', lc: 390, rc: 410, weak: 5 },
-{ name: '양준서', lc: 400, rc: 415, weak: 6 },
-{ name: '송다영', lc: 405, rc: 420, weak: 7 },
-{ name: '구지현', lc: 410, rc: 420, weak: 5 },
-{ name: '홍세준', lc: 415, rc: 425, weak: 2 },
-// EXPERT (~850~990)
-{ name: '변지훈', lc: 425, rc: 435, weak: 7 },
-{ name: '마소연', lc: 435, rc: 455, weak: 6 },
-{ name: '엄태준', lc: 450, rc: 470, weak: 5 },
-{ name: '진하린', lc: 465, rc: 485, weak: 7 },
-{ name: '장민수', lc: 485, rc: 495, weak: null },
+    {
+        name: '김민준',
+        lc: 150,
+        rc: 160,
+        weak: 5,
+        className: 'TARGET_600',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '이서연',
+        lc: 195,
+        rc: 225,
+        weak: 7,
+        className: 'TARGET_600',
+        classType: 'WEEKEND',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '박지우',
+        lc: 210,
+        rc: 240,
+        weak: 6,
+        className: 'TARGET_600',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '최다은',
+        lc: 165,
+        rc: 175,
+        weak: 5,
+        className: 'TARGET_600',
+        classType: 'WEEKEND',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '정유진',
+        lc: 230,
+        rc: 250,
+        weak: 7,
+        className: 'TARGET_600',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '강민서',
+        lc: 245,
+        rc: 265,
+        weak: 7,
+        className: 'TARGET_800',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '윤지호',
+        lc: 260,
+        rc: 290,
+        weak: 5,
+        className: 'TARGET_800',
+        classType: 'WEEKEND',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '임수빈',
+        lc: 275,
+        rc: 305,
+        weak: 6,
+        className: 'TARGET_800',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '조현우',
+        lc: 290,
+        rc: 320,
+        weak: 3,
+        className: 'TARGET_800',
+        classType: 'WEEKEND',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '한나연',
+        lc: 300,
+        rc: 330,
+        weak: 7,
+        className: 'TARGET_800',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '신동현',
+        lc: 310,
+        rc: 335,
+        weak: 5,
+        className: 'TARGET_800',
+        classType: 'WEEKEND',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '오세린',
+        lc: 315,
+        rc: 345,
+        weak: 6,
+        className: 'TARGET_800',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '권민재',
+        lc: 320,
+        rc: 350,
+        weak: 2,
+        className: 'TARGET_800',
+        classType: 'WEEKEND',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '문채원',
+        lc: 250,
+        rc: 270,
+        weak: 7,
+        className: 'TARGET_800',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '노준혁',
+        lc: 330,
+        rc: 350,
+        weak: 5,
+        className: 'TARGET_800',
+        classType: 'WEEKEND',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '백서윤',
+        lc: 350,
+        rc: 360,
+        weak: 7,
+        className: 'HIGH_SCORE',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '허재원',
+        lc: 360,
+        rc: 370,
+        weak: 5,
+        className: 'HIGH_SCORE',
+        classType: 'WEEKEND',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '남지민',
+        lc: 365,
+        rc: 385,
+        weak: 6,
+        className: 'HIGH_SCORE',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '류하은',
+        lc: 375,
+        rc: 395,
+        weak: 7,
+        className: 'HIGH_SCORE',
+        classType: 'WEEKEND',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '심민호',
+        lc: 385,
+        rc: 405,
+        weak: 3,
+        className: 'HIGH_SCORE',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '전은지',
+        lc: 390,
+        rc: 410,
+        weak: 5,
+        className: 'HIGH_SCORE',
+        classType: 'WEEKEND',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '양준서',
+        lc: 400,
+        rc: 415,
+        weak: 6,
+        className: 'HIGH_SCORE',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '송다영',
+        lc: 405,
+        rc: 420,
+        weak: 7,
+        className: 'HIGH_SCORE',
+        classType: 'WEEKEND',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '구지현',
+        lc: 410,
+        rc: 420,
+        weak: 5,
+        className: 'HIGH_SCORE',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '홍세준',
+        lc: 415,
+        rc: 425,
+        weak: 2,
+        className: 'HIGH_SCORE',
+        classType: 'WEEKEND',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '변지훈',
+        lc: 425,
+        rc: 435,
+        weak: 7,
+        className: 'HIGH_SCORE',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '마소연',
+        lc: 435,
+        rc: 455,
+        weak: 6,
+        className: 'HIGH_SCORE',
+        classType: 'WEEKEND',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '엄태준',
+        lc: 450,
+        rc: 470,
+        weak: 5,
+        className: 'HIGH_SCORE',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '진하린',
+        lc: 465,
+        rc: 485,
+        weak: 7,
+        className: 'HIGH_SCORE',
+        classType: 'WEEKEND',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
+    {
+        name: '장민수',
+        lc: 485,
+        rc: 495,
+        weak: null,
+        className: 'HIGH_SCORE',
+        classType: 'WEEKDAY',
+        enrolledAt: '2025-03-01',
+        expiresAt: '2025-08-31'
+    },
 ];
 
 // ─── 기출문제 데이터 (~52문항) ──────────────────────────
@@ -425,15 +690,19 @@ const total = raw.lc + raw.rc;
 const level = getLevel(total);
 const partScores = getPartScores(raw.lc, raw.rc, raw.weak);
 
-const student = await prisma.student.create({
-data: {
-name: raw.name,
-totalScore: total,
-lcScore: raw.lc,
-rcScore: raw.rc,
-level,
-},
-});
+    const student = await prisma.student.create({
+        data: {
+            name: raw.name,
+            totalScore: total,
+            lcScore: raw.lc,
+            rcScore: raw.rc,
+            level,
+            className: raw.className || null,
+            classType: raw.classType || null,
+            enrolledAt: raw.enrolledAt ? new Date(raw.enrolledAt) : null,
+            expiresAt: raw.expiresAt ? new Date(raw.expiresAt) : null,
+        },
+    });
 
 await prisma.scoreRecord.create({
 data: {

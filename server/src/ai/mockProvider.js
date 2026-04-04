@@ -33,4 +33,18 @@ async function buildSelectionCriteria({ level, weakParts }) {
     };
 }
 
-module.exports = { analyzeStudent, buildSelectionCriteria };
+async function extractQuestionsFromText({ text, source }) {
+    return [
+        {
+            part:         5,
+            questionType: 'GRAMMAR',
+            difficulty:   'MEDIUM',
+            content:      '[Mock 추출] ' + text.slice(0, 80).replace(/\n/g, ' '),
+            options:      ['A) mock1', 'B) mock2', 'C) mock3', 'D) mock4'],
+            answer:       'A',
+            explanation:  'Mock 해설',
+        },
+    ];
+}
+
+module.exports = { analyzeStudent, buildSelectionCriteria, extractQuestionsFromText };

@@ -68,4 +68,40 @@ difficultyRatio 합계는 반드시 1.0이어야 합니다.`,
     }
 }
 
-module.exports = {analyzeStudent, buildSelectionCriteria};
+// PDF -> 문제 추출
+async function extractQuestionsFromText({ text, source }) {
+    const completion = await client.chat.completions.create({
+        model:      'gpt-4o-mini',
+        max_tokens: 2000,
+        messages: [
+            {
+                role:    'system',
+                content: `당신은 토익 문제 분석 전문가입니다. 주어진 텍스트에서 토익 문제를 추출하고 JSON 배열로만 반환하세요.
+각 문제 형식:
+{
+  "part": 1~7,
+  "questionType": "GRAMMAR"|"VOCABULARY"|"SHORT_RESPONSE"|"SINGLE_PASSAGE"|"SHORT_CONVERSATION"|"LONG_TALK"|"PHOTO_DESCRIPTION"|"SHORT_PASSAGE_FILL"|"DOUBLE_PASSAGE"|"TRIPLE_PASSAGE",
+  "difficulty": "LOW"|"MEDIUM"|"HIGH",
+  "content": "문제 본문",
+  "options": ["A)...", "B)...", "C)...", "D)..."],
+  "answer": "A"|"B"|"C"|"D",
+  "explanation": "해설"
+}
+JSON 배열만 반환. 추출 불가시 빈 배열 [].`,
+            },
+            {
+                role:    'user',
+                content: `다음 텍스트에서 토익 문제를 추출해주세요:\n\n${text.slice(0, 8000)}`,
+            },
+        ],
+    });
+
+    try {
+        const raw = completion.choices[0].message.content.replace(/```json|```/g, '').trim();
+        return JSON.parse(raw);
+    } catch {
+        return [];
+    }
+}
+
+module.exports = { analyzeStudent, buildSelectionCriteria, extractQuestionsFromText };
