@@ -55,16 +55,29 @@ async function addCover({bookUid, title = 'TOEIC-tailor', studentName = ''}) {
 
 // POST /books/{bookUid}/contents
 async function addContent({bookUid, text, studentName = '', title = ''}) {
-    return await sbClient.contents.insert(
-        bookUid,
-        TPL_UID,
-        {
-            Student_Name: studentName,
-            '회차 및 Title': title,
-            AI_Content: text,
-        },
-        {breakBefore: 'page'},
-    );
+    try {
+        return await sbClient.contents.insert(
+            bookUid,
+            TPL_UID,
+            {
+                Student_Name: studentName,
+                '회차 및 Title': title,
+                AI_Content: text,
+            },
+            {breakBefore: 'page'},
+        );
+    } catch (err) {
+        // 상세 에러 로깅
+        console.error('[addContent] 실패:', {
+            status: err.statusCode,
+            message: err.message,
+            details: err.details,
+            bookUid,
+            title,
+            textLength: text?.length,
+        });
+        throw err;
+    }
 }
 
 
