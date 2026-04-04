@@ -67,6 +67,9 @@ export const generateBatch = (studentIds, onEvent) => {
 export const downloadWorkbookPdf = (id) =>
     api.get(`/workbooks/${id}/pdf`, { responseType: 'blob' });
 
+export const deleteWorkbookBookUid = (workbookId) =>
+    api.delete(`/workbooks/${workbookId}/book`);
+
 export const downloadWorkbooksZip = (workbookIds) =>
     api.post('/workbooks/pdf-zip', { workbookIds }, { responseType: 'blob' });
 

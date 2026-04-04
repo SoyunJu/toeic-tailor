@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useNavigate }         from 'react-router-dom';
-import { getStudents }         from '../api';
-import { generateBatch }       from '../api';
+import {useEffect, useState} from 'react';
+import {Link, useNavigate} from 'react-router-dom';
+import {generateBatch, getStudents} from '../api';
 
 const CLASS_NAME_OPTIONS = [
     { value: '',           label: '전체 반' },
@@ -196,11 +195,33 @@ export default function Generate() {
                     </button>
 
                     {/* 요약 */}
-                    {summary && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm">
-                            <p className="font-semibold text-blue-700 mb-1">생성 완료</p>
-                            <p>성공 {summary.succeeded}명 · 실패 {summary.failed}명 · 전체 {summary.total}명</p>
+                    {summary ? (
+                        <div className="space-y-3">
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-700">
+                                <p className="font-medium">✅ 생성 완료</p>
+                                <p>총 {summary.total}명 · 성공 {summary.succeeded}명 · 실패 {summary.failed}명</p>
+                            </div>
+                            <Link to="/orders"
+                                  className="block w-full py-2 bg-blue-600 text-white rounded font-medium
+                  hover:bg-blue-700 transition text-center text-sm">
+                                주문 목록으로 이동
+                            </Link>
+                            <button onClick={() => {
+                                setSummary(null);
+                                setProgress({});
+                                setSelected(new Set());
+                            }}
+                                    className="w-full py-2 border rounded text-sm text-gray-600 hover:bg-gray-50 transition">
+                                새로 생성하기
+                            </button>
                         </div>
+                    ) : (
+                        <button onClick={handleGenerate}
+                                disabled={!selected.size || loading}
+                                className="w-full py-2 bg-blue-600 text-white rounded font-medium
+                hover:bg-blue-700 disabled:opacity-40 transition text-sm">
+                            {loading ? '생성 중...' : `문제집 생성 (${selected.size}명)`}
+                        </button>
                     )}
 
                     {/* 개별 진행 상태 */}

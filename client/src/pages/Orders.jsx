@@ -98,19 +98,60 @@ function OrderModal({ workbookId, studentName, onClose, onSuccess }) {
 }
 
 // ── 탭1: 전체 목록 ───────────────────────────────────
-function AllOrdersTab({orders, flat, onRefresh}) {
+function AllOrdersTab({orders, onRefresh}) {
+    const [selected, setSelected] = useState(new Set());
     const [orderTarget, setOrderTarget] = useState(null);
 
-    async function handleCancel(workbookId) {
-        const reason = prompt('취소 사유를 입력하세요');
-        if (!reason) return;
+    function toggleGroup(key) {
+        setSelected(prev => {
+            const next = new Set(prev);
+            next.has(key) ? next.delete(key) : next.add(key);
+            return next;
+        });
+    }
+
+    function toggleAll() {
+        const unordered = orders.filter(g => !g.orderUid).map(g => g.groupKey);
+        selected.size === unordered.length
+            ? setSelected(new Set())
+            : setSelected(new Set(unordered));
+    }
+
+    async function handleBulkOrder() {
+        const targets = orders.filter(g => selected.has(g.groupKey) && !g.orderUid);
+        if (!targets.length) return;
+        // 대표 workbookId (그룹 첫번째)로 모달 띄우기
+        setOrderTarget({
+            workbookId: targets[0].members[0]?.workbookId,
+            studentName: targets.map(g => g.title).join(', '),
+            groupKeys: targets.map(g => g.groupKey),
+        });
+    }
+
+    async function handleCancel(group) {
+        if (!confirm(`"${group.title}" 주문을 취소하시겠습니까?`)) return;
         try {
-            await cancelOrder(workbookId, reason);
+            await cancelOrder(group.members[0]?.workbookId, '사용자 취소');
             onRefresh();
         } catch (e) {
             alert(e.response?.data?.message || e.message);
         }
     }
+
+    async function handleDelete(group) {
+        if (!confirm(`"${group.title}"을 목록에서 삭제하시겠습니까?`)) return;
+        try {
+            // 주문 없는 항목은 그냥 bookUid 초기화로 목록에서 제거
+            await Promise.all(group.members.map(m =>
+                deleteWorkbookBookUid(m.workbookId)
+            ));
+            onRefresh();
+        } catch (e) {
+            alert(e.response?.data?.message || e.message);
+        }
+    }
+
+    const unorderedCount = orders.filter(g => !g.orderUid).length;
 
     return (
         <>
@@ -119,9 +160,29 @@ function AllOrdersTab({orders, flat, onRefresh}) {
                     workbookId={orderTarget.workbookId}
                     studentName={orderTarget.studentName}
                     onClose={() => setOrderTarget(null)}
-                    onSuccess={onRefresh}
+                    onSuccess={() => {
+                        setSelected(new Set());
+                        onRefresh();
+                    }}
                 />
             )}
+
+            {/* 상단 액션 바 */}
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
+                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input type="checkbox"
+                           checked={selected.size === unorderedCount && unorderedCount > 0}
+                           onChange={toggleAll}
+                           className="w-4 h-4 accent-blue-600"/>
+                    전체 선택 (미주문)
+                </label>
+                <button onClick={handleBulkOrder}
+                        disabled={!selected.size}
+                        className="px-4 py-1.5 text-sm bg-green-600 text-white rounded
+            hover:bg-green-700 disabled:opacity-40 transition">
+                    🛒 선택 주문하기 ({selected.size}건)
+                </button>
+            </div>
 
             <div className="space-y-4">
                 {orders.length === 0 ? (
@@ -132,6 +193,13 @@ function AllOrdersTab({orders, flat, onRefresh}) {
                         <div
                             className="px-4 py-3 bg-gray-50 border-b flex items-center justify-between flex-wrap gap-2">
                             <div className="flex items-center gap-3">
+                                {/* 미주문만 체크박스 표시 */}
+                                {!group.orderUid && (
+                                    <input type="checkbox"
+                                           checked={selected.has(group.groupKey)}
+                                           onChange={() => toggleGroup(group.groupKey)}
+                                           className="w-4 h-4 accent-blue-600"/>
+                                )}
                                 <span className="font-medium text-sm">{group.title}</span>
                                 {group.orderUid ? (
                                     <span
@@ -142,22 +210,20 @@ function AllOrdersTab({orders, flat, onRefresh}) {
                                     <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-500">미주문</span>
                                 )}
                             </div>
+
                             <div className="flex gap-2">
-                                {!group.orderUid && (
-                                    <button
-                                        onClick={() => setOrderTarget({
-                                            workbookId: group.members[0]?.workbookId,
-                                            studentName: group.title,
-                                        })}
-                                        className="px-3 py-1 text-xs bg-green-50 text-green-700 border border-green-200 rounded hover:bg-green-100">
-                                        주문하기
+                                {/* 주문된 것만 취소 버튼 */}
+                                {group.orderUid && ['20', 'PAID', 'PDF_READY'].includes(group.orderStatus) && (
+                                    <button onClick={() => handleCancel(group)}
+                                            className="px-3 py-1 text-xs border border-red-200 text-red-500 rounded hover:bg-red-50">
+                                        주문 취소
                                     </button>
                                 )}
-                                {['PAID', 'PDF_READY'].includes(group.orderStatus) && (
-                                    <button
-                                        onClick={() => handleCancel(group.members[0]?.workbookId)}
-                                        className="px-3 py-1 text-xs border border-red-200 text-red-500 rounded hover:bg-red-50">
-                                        취소
+                                {/* 미주문 항목 삭제 */}
+                                {!group.orderUid && (
+                                    <button onClick={() => handleDelete(group)}
+                                            className="px-3 py-1 text-xs border border-gray-200 text-gray-400 rounded hover:bg-gray-50">
+                                        삭제
                                     </button>
                                 )}
                             </div>

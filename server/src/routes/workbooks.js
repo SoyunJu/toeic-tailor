@@ -25,18 +25,30 @@ function buildWorkbookPdf(doc, { studentName, level, totalScore, createdAt, ques
         .text('생성일: ' + new Date(createdAt).toLocaleDateString('ko-KR'), { align: 'center' });
 
     // 문제 페이지
-    questions.forEach((wq, idx) => {
-        const q = wq.question;
+    const QUESTIONS_PER_PAGE = parseInt(process.env.WORKBOOK_QUESTIONS_PER_PAGE) || 3;
+
+    // ── 문제 페이지 (N개씩 묶어서 한 페이지) ──────────────────
+    for (let i = 0; i < questions.length; i += QUESTIONS_PER_PAGE) {
+        const chunk = questions.slice(i, i + QUESTIONS_PER_PAGE);
         doc.addPage();
-        doc.fillColor('black').fontSize(11).font('Korean')
-            .text('Q' + (idx + 1) + '.  [Part ' + q.part + ' / ' + q.questionType + ' / ' + q.difficulty + ']');
-        doc.moveDown(0.3);
-        doc.fontSize(10).text(q.content, { lineGap: 3 });
-        if (Array.isArray(q.options) && q.options.length) {
-            doc.moveDown(0.3);
-            q.options.forEach(opt => doc.text(opt, { lineGap: 2 }));
-        }
-    });
+        chunk.forEach((wq, j) => {
+            const q = wq.question;
+            const num = i + j + 1;
+            if (j > 0) {
+                doc.moveDown(0.8);
+                doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).stroke('#e5e7eb');
+                doc.moveDown(0.5);
+            }
+            doc.fillColor('black').fontSize(10).font('Korean')
+                .text('Q' + num + '.  [Part ' + q.part + ' / ' + q.questionType + ' / ' + q.difficulty + ']', {continued: false});
+            doc.moveDown(0.2);
+            doc.fontSize(9).text(q.content, {lineGap: 2});
+            if (Array.isArray(q.options) && q.options.length) {
+                doc.moveDown(0.2);
+                q.options.forEach(opt => doc.text(opt, {lineGap: 1.5}));
+            }
+        });
+    }
 
     // 정답 모음 (마지막 페이지)
     doc.addPage();
@@ -369,5 +381,19 @@ router.post('/pdf-zip', async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
+
+router.delete('/:id/book', async (req, res) => {
+    try {
+        await prisma.workbook.update({
+            where: { id: parseInt(req.params.id) },
+            data:  { bookUid: null, bookStatus: null },
+        });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 
 module.exports = router;
