@@ -9,6 +9,7 @@ router.get('/', (_req, res) => {
             WORKBOOK_DEFAULT_QUESTIONS: parseInt(process.env.WORKBOOK_DEFAULT_QUESTIONS) || 20,
             WORKBOOK_MAX_QUESTIONS:     parseInt(process.env.WORKBOOK_MAX_QUESTIONS)     || 23,
             WORKBOOK_MIN_PAGES:         parseInt(process.env.WORKBOOK_MIN_PAGES)         || 24,
+            WORKBOOK_QUESTIONS_PER_PAGE: parseInt(process.env.WORKBOOK_QUESTIONS_PER_PAGE) || 3,
             AI_PROVIDER:                process.env.AI_PROVIDER || 'mock',
         },
     });
@@ -26,6 +27,9 @@ router.put('/', (req, res) => {
     }
     if (WORKBOOK_MIN_PAGES != null) {
         process.env.WORKBOOK_MIN_PAGES = String(parseInt(WORKBOOK_MIN_PAGES));
+    }
+    if (WORKBOOK_QUESTIONS_PER_PAGE != null) {
+        process.env.WORKBOOK_QUESTIONS_PER_PAGE = String(parseInt(WORKBOOK_QUESTIONS_PER_PAGE));
     }
     if (AI_PROVIDER != null) {
         process.env.AI_PROVIDER = AI_PROVIDER;

@@ -15,6 +15,7 @@ const COVER_TPL_UID = process.env.SWEETBOOK_COVER_TEMPLATE_UID     || '75HruEK3E
 const MIN_PAGES   = parseInt(process.env.WORKBOOK_MIN_PAGES) || 24;
 const COVER_PAGES = 1;
 
+
 // 패딩용 토익 필수 어휘
 const VOCAB_LIST = [
     'accomplish: 달성하다 / accumulate: 축적하다 / acknowledge: 인정하다',
@@ -122,10 +123,12 @@ async function publishWorkbook({ title, externalRef, questions, studentName = ''
     await addCover({ bookUid, title, studentName });
     console.log(`[PUBLISH] 표지 추가 완료`);
 
-    for (let i = 0; i < questions.length; i++) {
-        const text = formatQuestionText(questions[i], i + 1);
-        await addContent({ bookUid, text, studentName, title: `Q${i + 1}` });
-        process.stdout.write(`\r[PUBLISH] 문제 추가: ${i + 1}/${questions.length}`);
+    const QUESTIONS_PER_PAGE = 3; // 한 페이지당 문제 수
+    for (let i = 0; i < questions.length; i += QUESTIONS_PER_PAGE) {
+        const chunk = questions.slice(i, i + QUESTIONS_PER_PAGE);
+        const text  = chunk.map((q, j) => formatQuestionText(q, i + j + 1)).join('\n\n---\n\n');
+        await addContent({ bookUid, text, studentName, title: `Q${i + 1}~Q${Math.min(i + QUESTIONS_PER_PAGE, questions.length)}` });
+        process.stdout.write(`\r[PUBLISH] 페이지 추가: ${Math.ceil((i + QUESTIONS_PER_PAGE) / QUESTIONS_PER_PAGE)}/${Math.ceil(questions.length / QUESTIONS_PER_PAGE)}`);
     }
     console.log('');
 
@@ -181,11 +184,13 @@ async function publishBatchWorkbook({ students }) {
         totalContentPages++;
         console.log(`[BATCH_PUBLISH] ${student.name} 헤더 추가`);
 
-        for (let i = 0; i < student.questions.length; i++) {
-            const text = formatQuestionText(student.questions[i], i + 1);
-            await addContent({ bookUid, text, studentName: student.name, title: `Q${i + 1}` });
-            process.stdout.write(`\r[BATCH_PUBLISH] ${student.name} 문제 ${i + 1}/${student.questions.length}`);
+        const QUESTIONS_PER_PAGE = 3;
+        for (let i = 0; i < student.questions.length; i += QUESTIONS_PER_PAGE) {
+            const chunk = student.questions.slice(i, i + QUESTIONS_PER_PAGE);
+            const text  = chunk.map((q, j) => formatQuestionText(q, i + j + 1)).join('\n\n---\n\n');
+            await addContent({ bookUid, text, studentName: student.name, title: `Q${i + 1}~Q${Math.min(i + QUESTIONS_PER_PAGE, student.questions.length)}` });
             totalContentPages++;
+            process.stdout.write(`\r[BATCH_PUBLISH] ${student.name} 페이지 ${Math.ceil((i + QUESTIONS_PER_PAGE) / QUESTIONS_PER_PAGE)}/${Math.ceil(student.questions.length / QUESTIONS_PER_PAGE)}`);
         }
         console.log('');
     }

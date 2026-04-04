@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getStudents, deleteStudent, updateStudent } from '../api';
+import {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {deleteStudent, getStudents, updateStudent} from '../api';
 
 const LEVEL_COLOR = {
     BEGINNER:     'bg-gray-100 text-gray-600',
@@ -162,17 +162,17 @@ export default function Students() {
                 <p className="text-gray-400 text-sm">불러오는 중...</p>
             ) : (
                 <div className="bg-white rounded-xl border overflow-x-auto">
-                    <table className="w-full text-sm min-w-[700px]">
+                    <table className="w-full text-sm">
                         <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
                         <tr>
                             <th className="px-4 py-3 text-left">이름</th>
                             <th className="px-4 py-3 text-left">반</th>
                             <th className="px-4 py-3 text-left">레벨</th>
                             <th className="px-4 py-3 text-right">총점</th>
-                            <th className="px-4 py-3 text-right">LC/RC</th>
-                            <th className="px-4 py-3 text-left">취약파트</th>
-                            <th className="px-4 py-3 text-left">수강만료</th>
-                            <th className="px-4 py-3 text-right">문제집</th>
+                            <th className="px-4 py-3 text-right hidden sm:table-cell">LC/RC</th>
+                            <th className="px-4 py-3 text-left hidden md:table-cell">취약파트</th>
+                            <th className="px-4 py-3 text-left hidden lg:table-cell">수강만료</th>
+                            <th className="px-4 py-3 text-right hidden sm:table-cell">문제집</th>
                             <th className="px-4 py-3"></th>
                         </tr>
                         </thead>
@@ -192,14 +192,14 @@ export default function Students() {
                     </span>
                                 </td>
                                 <td className="px-4 py-3 text-right font-medium">{s.totalScore}</td>
-                                <td className="px-4 py-3 text-right text-gray-500">{s.lcScore}/{s.rcScore}</td>
-                                <td className="px-4 py-3 text-gray-500 text-xs">
+                                <td className="px-4 py-3 hidden sm:table-cell text-right text-gray-500">{s.lcScore}/{s.rcScore}</td>
+                                <td className="px-4 py-3 hidden md:table-cell text-gray-500 text-xs">
                                     {s.weakParts.map(w => `P${w.part}(${Math.round(w.rate * 100)}%)`).join(' · ')}
                                 </td>
-                                <td className="px-4 py-3 text-gray-400 text-xs">
+                                <td className="px-4 py-3 hidden lg:table-cell text-gray-400 text-xs">
                                     {s.expiresAt ? new Date(s.expiresAt).toLocaleDateString('ko-KR') : '-'}
                                 </td>
-                                <td className="px-4 py-3 text-right text-gray-500">{s.workbookCount}</td>
+                                <td className="px-4 py-3 hidden sm:table-cell text-right text-gray-500">{s.workbookCount}</td>
                                 <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                                     <div className="flex gap-1 justify-end">
                                         <button

@@ -1,12 +1,11 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import Upload    from './pages/Upload';
-import Students  from './pages/Students';
-import Student   from './pages/Student';
-import Orders    from './pages/Orders';
-import Generate  from './pages/Generate';
-import Settings  from './pages/Settings';
-import { getCredits, chargeCredits } from './api';
+import {BrowserRouter, NavLink, Route, Routes} from 'react-router-dom';
+import {useEffect, useState} from 'react';
+import Upload from './pages/Upload';
+import Students from './pages/Students';
+import Orders from './pages/Orders';
+import Generate from './pages/Generate';
+import Settings from './pages/Settings';
+import {chargeCredits, getCredits} from './api';
 
 function CreditsWidget() {
     const [balance,  setBalance]  = useState(null);
@@ -61,14 +60,16 @@ function Nav() {
     const inactive = base + 'text-gray-600 hover:bg-gray-100';
 
     return (
-        <nav className="bg-white border-b px-6 py-3 flex items-center gap-2 flex-wrap">
+        <nav className="bg-white border-b px-4 py-3 flex items-center gap-1 flex-wrap">
             <span className="font-bold text-blue-700 text-lg mr-2">📘 TOEIC Tailor</span>
-            <NavLink to="/upload"    className={({ isActive }) => isActive ? active : inactive}>업로드</NavLink>
-            <NavLink to="/students"  className={({ isActive }) => isActive ? active : inactive}>학생 목록</NavLink>
-            <NavLink to="/generate"  className={({ isActive }) => isActive ? active : inactive}>기출 생성</NavLink>
-            <NavLink to="/orders"    className={({ isActive }) => isActive ? active : inactive}>주문 목록</NavLink>
-            <NavLink to="/settings"  className={({ isActive }) => isActive ? active : inactive}>설정</NavLink>
-            <CreditsWidget />
+            <NavLink to="/upload" className={({isActive}) => isActive ? active : inactive}>업로드</NavLink>
+            <NavLink to="/students" className={({isActive}) => isActive ? active : inactive}>학생 목록</NavLink>
+            <NavLink to="/generate" className={({isActive}) => isActive ? active : inactive}>기출 생성</NavLink>
+            <NavLink to="/orders" className={({isActive}) => isActive ? active : inactive}>주문 목록</NavLink>
+            <NavLink to="/settings" className={({isActive}) => isActive ? active : inactive}>설정</NavLink>
+            <div className="ml-auto">
+                <CreditsWidget/>
+            </div>
         </nav>
     );
 }
@@ -78,12 +79,11 @@ export default function App() {
         <BrowserRouter>
             <div className="min-h-screen bg-gray-50">
                 <Nav />
-                <main className="max-w-5xl mx-auto p-6">
+                <main className="max-w-7xl mx-auto p-4 sm:p-6">
                     <Routes>
                         <Route path="/"             element={<Students />} />
                         <Route path="/upload"       element={<Upload />} />
                         <Route path="/students"     element={<Students />} />
-                        <Route path="/students/:id" element={<Student />} />
                         <Route path="/generate"     element={<Generate />} />
                         <Route path="/orders"       element={<Orders />} />
                         <Route path="/settings"     element={<Settings />} />

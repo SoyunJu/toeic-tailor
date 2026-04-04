@@ -77,7 +77,10 @@ router.get('/', async (req, res) => {
     try {
         const workbooks = await prisma.workbook.findMany({
             where:   { bookUid: { not: null } },
-            include: { student: { select: { id: true, name: true, level: true } } },
+            include: {
+                student: {select: {id: true, name: true, level: true}},
+                _count: {select: {questions: true}},
+            },
             orderBy: { updatedAt: 'desc' },
         });
 
@@ -104,11 +107,39 @@ router.get('/', async (req, res) => {
                     orderStatus: latestStatus,
                     student:     wb.student,
                     createdAt:   wb.createdAt,
+                    totalQuestions: wb._count?.questions ?? null,
                 };
             })
         );
 
-        res.json({ success: true, data });
+        const grouped = {};
+        for (const item of data) {
+            const key = item.bookUid || ('single-' + item.workbookId);
+            if (!grouped[key]) {
+                const date = new Date(item.createdAt).toLocaleDateString('ko-KR');
+                grouped[key] = {
+                    groupKey: key,
+                    bookUid: item.bookUid,
+                    orderUid: null,
+                    orderStatus: item.orderStatus,
+                    date,
+                    members: [],
+                };
+            }
+            grouped[key].members.push(item);
+            if (item.orderUid) {
+                grouped[key].orderUid    = item.orderUid;
+                grouped[key].orderStatus = item.orderStatus;
+            }
+        }
+
+        const groupedData = Object.values(grouped).map(g => ({
+            ...g,
+            title: g.date + ' / ' + g.members.length + '명',
+            workbookIds: g.members.map(m => m.workbookId),
+        }));
+
+        res.json({success: true, data: groupedData, flat: data});
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

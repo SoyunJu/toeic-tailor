@@ -1,15 +1,22 @@
-import { useEffect, useState }                              from 'react';
-import { getOrders, cancelOrder, createOrder,
-    downloadWorkbookPdf, downloadWorkbooksZip }        from '../api';
+import {useEffect, useState} from 'react';
+import {cancelOrder, createOrder, downloadWorkbookPdf, downloadWorkbooksZip, getOrders} from '../api';
 
 const TABS = ['전체 목록', 'PDF 다운로드'];
 
 const STATUS_LABEL = {
+    // 문자열 키
     PAID: '결제완료', PDF_READY: 'PDF준비', CONFIRMED: '제작확정',
     IN_PRODUCTION: '제작중', COMPLETED: '제작완료',
     PRODUCTION_COMPLETE: '제작완료', SHIPPED: '배송중',
     DELIVERED: '배송완료', CANCELLED: '취소', CANCELLED_REFUND: '취소/환불', ERROR: '오류',
+    // 숫자 코드
+    '20': '결제완료', '25': 'PDF준비', '30': '제작확정',
+    '40': '제작중',   '45': '제작완료', '50': '제작완료',
+    '60': '배송중',   '70': '배송완료', '80': '취소',
+    '81': '취소/환불','90': '오류',
 };
+
+
 const STATUS_COLOR = {
     PAID: 'bg-blue-100 text-blue-700', CONFIRMED: 'bg-purple-100 text-purple-700',
     IN_PRODUCTION: 'bg-yellow-100 text-yellow-700', SHIPPED: 'bg-green-100 text-green-700',
@@ -91,7 +98,7 @@ function OrderModal({ workbookId, studentName, onClose, onSuccess }) {
 }
 
 // ── 탭1: 전체 목록 ───────────────────────────────────
-function AllOrdersTab({ orders, onRefresh }) {
+function AllOrdersTab({orders, flat, onRefresh}) {
     const [orderTarget, setOrderTarget] = useState(null);
 
     async function handleCancel(workbookId) {
@@ -116,63 +123,67 @@ function AllOrdersTab({ orders, onRefresh }) {
                 />
             )}
 
-            <div className="bg-white rounded-xl border overflow-x-auto">
-                <table className="w-full text-sm min-w-[700px]">
-                    <thead className="bg-gray-50 text-gray-500 text-xs uppercase border-b">
-                    <tr>
-                        <th className="px-4 py-3 text-left">학생</th>
-                        <th className="px-4 py-3 text-left">레벨</th>
-                        <th className="px-4 py-3 text-left">bookUid</th>
-                        <th className="px-4 py-3 text-left">주문상태</th>
-                        <th className="px-4 py-3 text-left">생성일</th>
-                        <th className="px-4 py-3 text-left">액션</th>
-                    </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                    {orders.length === 0 ? (
-                        <tr>
-                            <td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">
-                                생성된 문제집이 없습니다.
-                            </td>
-                        </tr>
-                    ) : orders.map(o => (
-                        <tr key={o.workbookId} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 font-medium">{o.student?.name}</td>
-                            <td className="px-4 py-3 text-gray-500 text-xs">{o.student?.level}</td>
-                            <td className="px-4 py-3 text-gray-400 font-mono text-xs truncate max-w-xs">{o.bookUid}</td>
-                            <td className="px-4 py-3">
-                                {o.orderUid ? (
-                                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLOR[o.orderStatus] || 'bg-gray-100'}`}>
-                      {STATUS_LABEL[o.orderStatus] || o.orderStatus}
-                    </span>
+            <div className="space-y-4">
+                {orders.length === 0 ? (
+                    <p className="text-gray-400 text-sm">생성된 문제집이 없습니다.</p>
+                ) : orders.map(group => (
+                    <div key={group.groupKey} className="bg-white rounded-xl border overflow-hidden">
+                        {/* 그룹 헤더 */}
+                        <div
+                            className="px-4 py-3 bg-gray-50 border-b flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-3">
+                                <span className="font-medium text-sm">{group.title}</span>
+                                {group.orderUid ? (
+                                    <span
+                                        className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLOR[group.orderStatus] || 'bg-gray-100'}`}>
+                    {STATUS_LABEL[group.orderStatus] || group.orderStatus}
+                  </span>
                                 ) : (
                                     <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-500">미주문</span>
                                 )}
-                            </td>
-                            <td className="px-4 py-3 text-gray-400 text-xs">
-                                {o.createdAt ? new Date(o.createdAt).toLocaleDateString('ko-KR') : '-'}
-                            </td>
-                            <td className="px-4 py-3">
-                                <div className="flex gap-1">
-                                    {!o.orderUid && (
-                                        <button
-                                            onClick={() => setOrderTarget({ workbookId: o.workbookId, studentName: o.student?.name })}
-                                            className="px-2 py-1 text-xs bg-green-50 text-green-700 border border-green-200 rounded hover:bg-green-100">
-                                            주문하기
-                                        </button>
-                                    )}
-                                    {['PAID', 'PDF_READY'].includes(o.orderStatus) && (
-                                        <button onClick={() => handleCancel(o.workbookId)}
-                                                className="px-2 py-1 text-xs border border-red-200 text-red-500 rounded hover:bg-red-50">
-                                            취소
-                                        </button>
-                                    )}
-                                </div>
-                            </td>
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
+                            </div>
+                            <div className="flex gap-2">
+                                {!group.orderUid && (
+                                    <button
+                                        onClick={() => setOrderTarget({
+                                            workbookId: group.members[0]?.workbookId,
+                                            studentName: group.title,
+                                        })}
+                                        className="px-3 py-1 text-xs bg-green-50 text-green-700 border border-green-200 rounded hover:bg-green-100">
+                                        주문하기
+                                    </button>
+                                )}
+                                {['PAID', 'PDF_READY'].includes(group.orderStatus) && (
+                                    <button
+                                        onClick={() => handleCancel(group.members[0]?.workbookId)}
+                                        className="px-3 py-1 text-xs border border-red-200 text-red-500 rounded hover:bg-red-50">
+                                        취소
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 학생 목록 */}
+                        <table className="w-full text-sm">
+                            <thead className="text-gray-400 text-xs border-b">
+                            <tr>
+                                <th className="px-4 py-2 text-left">학생</th>
+                                <th className="px-4 py-2 text-left">레벨</th>
+                                <th className="px-4 py-2 text-right">문제수</th>
+                            </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                            {group.members.map(m => (
+                                <tr key={m.workbookId} className="hover:bg-gray-50">
+                                    <td className="px-4 py-2 font-medium">{m.student?.name}</td>
+                                    <td className="px-4 py-2 text-gray-500 text-xs">{m.student?.level}</td>
+                                    <td className="px-4 py-2 text-right text-gray-400 text-xs">{m.totalQuestions ?? '-'}문항</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ))}
             </div>
         </>
     );
@@ -295,14 +306,17 @@ function PdfDownloadTab({ orders }) {
 // ── 메인 ─────────────────────────────────────────────
 export default function Orders() {
     const [tab,     setTab]     = useState(0);
-    const [orders,  setOrders]  = useState([]);
     const [loading, setLoading] = useState(true);
+    const [orders, setOrders] = useState([]);
+    const [flat, setFlat] = useState([]);
+
 
     async function load() {
         setLoading(true);
         try {
             const r = await getOrders();
             setOrders(r.data.data);
+            setFlat(r.data.flat || []);
         } finally {
             setLoading(false);
         }
@@ -334,8 +348,8 @@ export default function Orders() {
                 <p className="text-gray-400 text-sm">불러오는 중...</p>
             ) : (
                 <>
-                    {tab === 0 && <AllOrdersTab orders={orders} onRefresh={load} />}
-                    {tab === 1 && <PdfDownloadTab orders={orders} />}
+                    {tab === 0 && <AllOrdersTab orders={orders} flat={flat} onRefresh={load} />}
+                    {tab === 1 && <PdfDownloadTab orders={flat.filter(o => o.bookUid)} />}
                 </>
             )}
         </div>

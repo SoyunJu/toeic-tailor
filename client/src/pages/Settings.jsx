@@ -58,6 +58,12 @@ export default function Settings() {
                                 desc:  'SweetBook 인쇄 최소 페이지 (수정x)',
                                 min:   24, max: 100,
                             },
+                            {
+                                key:   'WORKBOOK_QUESTIONS_PER_PAGE',
+                                label: '페이지당 문제 수',
+                                desc:  '한 페이지에 묶어서 표시할 문제 수',
+                                min:   1, max: 10,
+                            },
                         ].map(({ key, label, desc, min, max }) => (
                             <div key={key}>
                                 <label className="block text-sm font-medium text-gray-700 mb-0.5">{label}</label>
