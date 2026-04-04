@@ -103,4 +103,39 @@ async function publishWorkbook({title, externalRef, questions, studentName = ''}
     return {bookUid, ...result};
 }
 
+
+// POST /orders
+async function createOrder({ bookUid, quantity = 1, shipping, externalRef, idempotencyKey }) {
+    const res = await client.post(
+        '/orders',
+        {
+            items: [{ bookUid, quantity }],
+            shipping,
+            externalRef,
+        },
+        {
+            headers: { 'Idempotency-Key': idempotencyKey || `order-${bookUid}-${Date.now()}` },
+        }
+    );
+    return res.data.data;
+}
+
+// GET /orders/{orderUid}
+async function getOrder(orderUid) {
+    const res = await client.get(`/orders/${orderUid}`);
+    return res.data.data;
+}
+
+// POST /orders/{orderUid}/cancel
+async function cancelOrder({ orderUid, cancelReason }) {
+    const res = await client.post(`/orders/${orderUid}/cancel`, { cancelReason });
+    return res.data;
+}
+
+module.exports = {
+    createBook, addCover, addContent, finalizeBook, publishWorkbook,
+    createOrder, getOrder, cancelOrder,
+};
+
+
 module.exports = {createBook, addCover, addContent, finalizeBook, publishWorkbook};
