@@ -15,6 +15,11 @@ export const uploadScores = (file) => {
     return api.post('/upload/scores', form);
 };
 
+// 문제 관리
+export const getQuestions    = (params) => api.get('/questions', { params });
+export const updateQuestion  = (id, data) => api.put(`/questions/${id}`, data);
+export const deleteQuestion  = (id) => api.delete(`/questions/${id}`);
+
 // 문제집
 export const generateWorkbook = (studentId) =>
     api.post('/workbooks/generate', { studentId });
@@ -24,3 +29,36 @@ export const getWorkbook = (id) => api.get(`/workbooks/${id}`);
 export const createOrder = (data)              => api.post('/orders', data);
 export const getOrders   = ()                  => api.get('/orders');
 export const cancelOrder = (id, cancelReason)  => api.post(`/orders/${id}/cancel`, { cancelReason });
+
+// 일괄 생성 — SSE / EventSource
+export const generateBatch = (studentIds, onEvent) => {
+    return new Promise((resolve, reject) => {
+        fetch('/api/workbooks/generate-batch', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({studentIds}),
+        }).then(async res => {
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const {done, value} = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, {stream: true});
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const event = JSON.parse(line.slice(6));
+                            onEvent(event);
+                            if (event.type === 'complete') resolve(event);
+                        } catch {
+                        }
+                    }
+                }
+            }
+        }).catch(reject);
+    });
+};

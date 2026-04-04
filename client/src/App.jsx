@@ -1,8 +1,9 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import Upload   from './pages/Upload';
+import {BrowserRouter, NavLink, Route, Routes} from 'react-router-dom';
+import Upload from './pages/Upload';
 import Students from './pages/Students';
-import Student  from './pages/Student';
-import Orders   from './pages/Orders';
+import Student from './pages/Student';
+import Orders from './pages/Orders';
+import Generate from './pages/Generate';
 
 function Nav() {
   const base = 'px-4 py-2 rounded text-sm font-medium transition-colors ';
@@ -15,6 +16,7 @@ function Nav() {
         <NavLink to="/upload"   className={({ isActive }) => isActive ? active : inactive}>업로드</NavLink>
         <NavLink to="/students" className={({ isActive }) => isActive ? active : inactive}>학생 목록</NavLink>
         <NavLink to="/orders"   className={({ isActive }) => isActive ? active : inactive}>주문 목록</NavLink>
+          <NavLink to="/generate" className={({isActive}) => isActive ? active : inactive}>기출 생성</NavLink>
       </nav>
   );
 }
@@ -31,6 +33,7 @@ export default function App() {
               <Route path="/students"    element={<Students />} />
               <Route path="/students/:id" element={<Student />} />
               <Route path="/orders"      element={<Orders />} />
+                <Route path="/generate" element={<Generate/>}/>
             </Routes>
           </main>
         </div>

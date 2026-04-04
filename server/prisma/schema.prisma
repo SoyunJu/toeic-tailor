@@ -69,16 +69,17 @@ enum Level {
 }
 
 model Question {
-  id           Int          @id @default(autoincrement())
-  part         Int
-  questionType QuestionType
-  difficulty   Difficulty
-  content      String
-  options      Json?
-  answer       String
-  explanation  String?
-  source       String?
-  createdAt    DateTime     @default(now())
+  id             Int          @id @default(autoincrement())
+  part           Int
+  questionType   QuestionType
+  difficulty     Difficulty
+  content        String
+  options        Json?
+  answer         String
+  explanation    String?
+  source         String?
+  duplicateCount Int          @default(0)
+  createdAt      DateTime     @default(now())
 
   workbookQuestions WorkbookQuestion[]
 }

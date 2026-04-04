@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { uploadScores } from '../api';
+import { uploadScores, getQuestions, updateQuestion, deleteQuestion } from '../api';
 import axios from 'axios';
 
-const TABS = ['학생 정보', '기출 업로드'];
+const TABS = ['학생 정보', '기출 업로드', '문제 관리'];
 
 // 컬럼 예시 데이터
 const SAMPLE_ROWS = [
@@ -305,24 +305,302 @@ function ExamUploadTab() {
                 <input type="file" accept=".pdf"
                        onChange={e => setFile(e.target.files[0])}
                        className="block w-full text-sm text-gray-500
-            file:mr-4 file:py-2 file:px-4 file:rounded file:border-0
-            file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100" />
+                           file:mr-4 file:py-2 file:px-4 file:rounded file:border-0
+                           file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"/>
             </div>
             <button onClick={handleUpload}
                     disabled={!file || loading}
                     className="w-full py-2 bg-purple-600 text-white rounded font-medium
-          hover:bg-purple-700 disabled:opacity-40 transition">
+                        hover:bg-purple-700 disabled:opacity-40 transition">
                 {loading ? 'AI 분석 중...' : '업로드 + AI 분석'}
             </button>
+
             {result && (
-                <div className="bg-green-50 border border-green-200 rounded p-4 text-sm">
-                    <p className="font-medium text-green-700">✅ 분석 완료</p>
-                    <p>추출된 문제: {result.extracted}개 · DB 저장: {result.saved}개</p>
-                    <p className="text-gray-500">출처: {result.source}</p>
+                <div className="space-y-3">
+                    <div className="bg-green-50 border border-green-200 rounded p-4 text-sm">
+                        <p className="font-medium text-green-700">✅ 분석 완료</p>
+                        <p>추출된 문제: {result.extracted}개 · DB 저장: {result.saved}개</p>
+                        <p className="text-gray-500">출처: {result.source}</p>
+                    </div>
+
+                    {result.questions?.length > 0 && (
+                        <div className="border rounded-xl overflow-hidden">
+                            <div className="bg-gray-50 px-4 py-2 border-b text-sm font-medium text-gray-700">
+                                추출된 문제 목록
+                            </div>
+                            <div className="divide-y max-h-96 overflow-y-auto">
+                                {result.questions.map((q, i) => (
+                                    <div key={i} className="px-4 py-3 text-sm space-y-1">
+                                        <div className="flex gap-2 flex-wrap">
+                                            <span
+                                                className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">Part {q.part}</span>
+                                            <span
+                                                className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">{q.questionType}</span>
+                                            <span
+                                                className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded text-xs">{q.difficulty}</span>
+                                            <span
+                                                className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">정답: {q.answer}</span>
+                                        </div>
+                                        <p className="text-gray-700 whitespace-pre-wrap">{q.content}</p>
+                                        {q.options?.length > 0 && (
+                                            <div className="text-gray-500 text-xs space-y-0.5">
+                                                {q.options.map((opt, j) => (
+                                                    <p key={j}>{opt}</p>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {q.explanation && (
+                                            <p className="text-xs text-blue-600">[해설] {q.explanation}</p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
             {error && (
                 <div className="bg-red-50 border border-red-200 rounded p-4 text-sm text-red-700">❌ {error}</div>
+            )}
+        </div>
+    );
+}
+
+const QUESTION_TYPES = [
+    'PHOTO_DESCRIPTION', 'SHORT_RESPONSE', 'SHORT_CONVERSATION', 'LONG_TALK',
+    'GRAMMAR', 'VOCABULARY', 'SHORT_PASSAGE_FILL',
+    'SINGLE_PASSAGE', 'DOUBLE_PASSAGE', 'TRIPLE_PASSAGE',
+];
+const DIFFICULTIES = ['LOW', 'MEDIUM', 'HIGH'];
+
+// 인라인 편집 행 컴포넌트
+function QuestionRow({q, onSave, onDelete}) {
+    const [editing, setEditing] = useState(false);
+    const [form, setForm] = useState({
+        part: q.part,
+        questionType: q.questionType,
+        difficulty: q.difficulty,
+        answer: q.answer,
+        explanation: q.explanation || '',
+    });
+
+    async function handleSave() {
+        await updateQuestion(q.id, form);
+        onSave();
+        setEditing(false);
+    }
+
+    return (
+        <tr className={`border-b text-sm ${editing ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+            {/* ID */}
+            <td className="px-3 py-2 text-gray-400 text-xs">{q.id}</td>
+
+            {/* Part */}
+            <td className="px-3 py-2">
+                {editing ? (
+                    <input type="number" min={1} max={7} value={form.part}
+                           onChange={e => setForm(p => ({...p, part: parseInt(e.target.value)}))}
+                           className="border rounded px-1 py-0.5 w-12 text-center text-xs"/>
+                ) : (
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">P{q.part}</span>
+                )}
+            </td>
+
+            {/* 유형 */}
+            <td className="px-3 py-2">
+                {editing ? (
+                    <select value={form.questionType}
+                            onChange={e => setForm(p => ({...p, questionType: e.target.value}))}
+                            className="border rounded px-1 py-0.5 text-xs w-full">
+                        {QUESTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                ) : (
+                    <span className="text-xs text-purple-700">{q.questionType}</span>
+                )}
+            </td>
+
+            {/* 난이도 */}
+            <td className="px-3 py-2">
+                {editing ? (
+                    <select value={form.difficulty}
+                            onChange={e => setForm(p => ({...p, difficulty: e.target.value}))}
+                            className="border rounded px-1 py-0.5 text-xs">
+                        {DIFFICULTIES.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                ) : (
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium
+            ${q.difficulty === 'LOW' ? 'bg-green-100 text-green-700' :
+                        q.difficulty === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'}`}>
+            {q.difficulty}
+          </span>
+                )}
+            </td>
+
+            {/* 문제 내용 (축약) */}
+            <td className="px-3 py-2 max-w-xs">
+                <p className="text-xs text-gray-600 truncate">{q.content}</p>
+            </td>
+
+            {/* 정답 */}
+            <td className="px-3 py-2">
+                {editing ? (
+                    <select value={form.answer}
+                            onChange={e => setForm(p => ({...p, answer: e.target.value}))}
+                            className="border rounded px-1 py-0.5 text-xs">
+                        {['A', 'B', 'C', 'D'].map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                ) : (
+                    <span className="font-medium text-green-700 text-xs">{q.answer}</span>
+                )}
+            </td>
+
+            {/* 중복수 */}
+            <td className="px-3 py-2 text-center">
+        <span className={`text-xs font-medium ${q.duplicateCount > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
+          {q.duplicateCount > 0 ? `+${q.duplicateCount}` : '-'}
+        </span>
+            </td>
+
+            {/* 출처 */}
+            <td className="px-3 py-2 text-xs text-gray-400 max-w-xs truncate">{q.source}</td>
+
+            {/* 액션 */}
+            <td className="px-3 py-2">
+                <div className="flex gap-1">
+                    {editing ? (
+                        <>
+                            <button onClick={handleSave}
+                                    className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+                                저장
+                            </button>
+                            <button onClick={() => setEditing(false)}
+                                    className="px-2 py-1 text-xs border rounded hover:bg-gray-50">
+                                취소
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <button onClick={() => setEditing(true)}
+                                    className="px-2 py-1 text-xs border rounded hover:bg-gray-50">
+                                편집
+                            </button>
+                            <button onClick={() => onDelete(q.id)}
+                                    className="px-2 py-1 text-xs border border-red-200 text-red-500 rounded hover:bg-red-50">
+                                삭제
+                            </button>
+                        </>
+                    )}
+                </div>
+            </td>
+        </tr>
+    );
+}
+
+function QuestionManagerTab() {
+    const [questions, setQuestions] = useState([]);
+    const [total, setTotal] = useState(0);
+    const [loading, setLoading] = useState(true);
+
+    // 필터
+    const [filterPart, setFilterPart] = useState('');
+    const [filterType, setFilterType] = useState('');
+    const [filterDiff, setFilterDiff] = useState('');
+    const [filterSearch, setFilterSearch] = useState('');
+
+    async function load() {
+        setLoading(true);
+        try {
+            const res = await getQuestions({
+                part: filterPart || undefined,
+                questionType: filterType || undefined,
+                difficulty: filterDiff || undefined,
+                search: filterSearch || undefined,
+            });
+            setQuestions(res.data.data);
+            setTotal(res.data.total);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        load();
+    }, [filterPart, filterType, filterDiff, filterSearch]);
+
+    async function handleDelete(id) {
+        if (!confirm('삭제하시겠습니까?')) return;
+        await deleteQuestion(id);
+        load();
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <h2 className="text-sm font-medium text-gray-700">전체 {total}문항</h2>
+                <button onClick={load}
+                        className="text-xs px-3 py-1.5 border rounded hover:bg-gray-50">
+                    🔄 새로고침
+                </button>
+            </div>
+
+            {/* 필터 */}
+            <div className="flex flex-wrap gap-2">
+                <select value={filterPart} onChange={e => setFilterPart(e.target.value)}
+                        className="border rounded px-3 py-2 text-sm">
+                    <option value="">전체 파트</option>
+                    {[1, 2, 3, 4, 5, 6, 7].map(p => <option key={p} value={p}>Part {p}</option>)}
+                </select>
+                <select value={filterType} onChange={e => setFilterType(e.target.value)}
+                        className="border rounded px-3 py-2 text-sm">
+                    <option value="">전체 유형</option>
+                    {QUESTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <select value={filterDiff} onChange={e => setFilterDiff(e.target.value)}
+                        className="border rounded px-3 py-2 text-sm">
+                    <option value="">전체 난이도</option>
+                    {DIFFICULTIES.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <input type="text" placeholder="문제 내용 검색"
+                       value={filterSearch}
+                       onChange={e => setFilterSearch(e.target.value)}
+                       className="border rounded px-3 py-2 text-sm w-48"/>
+            </div>
+
+            {/* 테이블 */}
+            {loading ? (
+                <p className="text-gray-400 text-sm">불러오는 중...</p>
+            ) : (
+                <div className="bg-white rounded-xl border overflow-x-auto">
+                    <table className="w-full text-sm min-w-[900px]">
+                        <thead className="bg-gray-50 text-gray-500 text-xs uppercase border-b">
+                        <tr>
+                            <th className="px-3 py-3 text-left">ID</th>
+                            <th className="px-3 py-3 text-left">파트</th>
+                            <th className="px-3 py-3 text-left">유형</th>
+                            <th className="px-3 py-3 text-left">난이도</th>
+                            <th className="px-3 py-3 text-left">문제 내용</th>
+                            <th className="px-3 py-3 text-left">정답</th>
+                            <th className="px-3 py-3 text-center">중복 횟수</th>
+                            <th className="px-3 py-3 text-left">출처</th>
+                            <th className="px-3 py-3"></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {questions.length === 0 ? (
+                            <tr>
+                                <td colSpan={9} className="px-3 py-8 text-center text-gray-400 text-sm">
+                                    문제가 없습니다.
+                                </td>
+                            </tr>
+                        ) : (
+                            questions.map(q => (
+                                <QuestionRow key={q.id} q={q} onSave={load} onDelete={handleDelete}/>
+                            ))
+                        )}
+                        </tbody>
+                    </table>
+                </div>
             )}
         </div>
     );
@@ -349,6 +627,7 @@ export default function Upload() {
 
             {tab === 0 && <StudentUploadTab />}
             {tab === 1 && <ExamUploadTab />}
+            {tab === 2 && <QuestionManagerTab />}
         </div>
     );
 }

@@ -15,7 +15,37 @@ async function analyzeStudent({name, level, totalScore, weakParts}) {
         messages: [
             {
                 role: 'system',
-                content: '당신은 토익 전문 강사입니다. 학생 데이터를 분석해 간결한 한국어 피드백을 제공합니다.',
+                content: `당신은 토익 문제 분석 전문가입니다. 주어진 텍스트에서 토익 문제를 추출하고 JSON 배열로만 반환하세요.
+
+파트 구분 기준 (반드시 준수):
+- Part 5: 단문 빈칸 (문법/어휘) — 선택지 4개, 문장 1개에 빈칸
+- Part 6: 장문 빈칸 — 지문 안에 빈칸이 있고 4개 선택지로 채우는 형태
+- Part 7: 독해 — 지문을 읽고 질문에 답하는 형태 (빈칸 없음)
+
+questionType 기준:
+- GRAMMAR: Part 5, 문법 문제
+- VOCABULARY: Part 5, 어휘 문제  
+- SHORT_PASSAGE_FILL: Part 6
+- SINGLE_PASSAGE: Part 7, 단일 지문
+- DOUBLE_PASSAGE: Part 7, 두 개 지문 연계
+- TRIPLE_PASSAGE: Part 7, 세 개 지문 연계
+
+난이도 기준:
+- LOW: 지문에 정답이 직접 언급됨
+- MEDIUM: 약간의 추론 필요
+- HIGH: 복잡한 추론 또는 여러 지문 연계 필요
+
+각 문제 형식:
+{
+  "part": 5~7,
+  "questionType": "위 기준 중 하나",
+  "difficulty": "LOW"|"MEDIUM"|"HIGH",
+  "content": "문제 본문 (지문 + 질문)",
+  "options": ["A)...", "B)...", "C)...", "D)..."],
+  "answer": "A"|"B"|"C"|"D",
+  "explanation": "정답 근거 (지문의 어느 부분에서 알 수 있는지)"
+}
+JSON 배열만 반환. 추출 불가시 빈 배열 [].`,
             },
             {
                 role: 'user',
@@ -47,13 +77,13 @@ async function buildSelectionCriteria({level, weakParts}) {
             {
                 role: 'user',
                 content: `레벨: ${level}, 취약파트: ${weakStr}
-다음 JSON 형식으로 문제 선별 기준을 반환하세요:
-{
-  "weakPartNums": [취약파트 번호 배열],
-  "difficultyRatio": { "LOW": 0.0~1.0, "MEDIUM": 0.0~1.0, "HIGH": 0.0~1.0 },
-  "totalQuestions": 20
-}
-difficultyRatio 합계는 반드시 1.0이어야 합니다.`,
+                다음 JSON 형식으로 문제 선별 기준을 반환하세요:
+                    {
+                      "weakPartNums": [취약파트 번호 배열],
+                      "difficultyRatio": { "LOW": 0.0~1.0, "MEDIUM": 0.0~1.0, "HIGH": 0.0~1.0 },
+                      "totalQuestions": 20
+                    }
+                difficultyRatio 합계는 반드시 1.0이어야 합니다.`,
             },
         ],
     });
