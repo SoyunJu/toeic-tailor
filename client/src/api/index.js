@@ -70,6 +70,10 @@ export const downloadWorkbookPdf = (id) =>
 export const downloadWorkbooksZip = (workbookIds) =>
     api.post('/workbooks/pdf-zip', { workbookIds }, { responseType: 'blob' });
 
+// 충전금
+export const getCredits  = ()           => api.get('/credits');
+export const chargeCredits = (amount)   => api.post('/credits/charge', { amount });
+
 // 설정
 export const getSettings    = ()     => api.get('/settings');
 export const updateSettings = (data) => api.put('/settings', data);

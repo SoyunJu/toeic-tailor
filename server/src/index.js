@@ -14,6 +14,7 @@ app.use('/api/workbooks', require('./routes/workbooks'));
 app.use('/api/orders',    require('./routes/orders'));
 app.use('/api/questions', require('./routes/questions'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/credits',   require('./routes/credits'));
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 

@@ -5,6 +5,8 @@ const { generateWorkbook, MIN_PAGES, COVER_PAGES } = require('../services/workbo
 const { publishWorkbook, publishBatchWorkbook } = require('../services/sweetbookClient');
 const PDFDocument = require('pdfkit');
 const archiver    = require('archiver');
+const path = require('path');
+const FONT_REGULAR = path.join(__dirname, '../fonts/NanumGothic.ttf');
 
 // ─── 공통 SweetBook 연동 헬퍼 ───────────────────────────────
 async function trySweetBookPublish({ student, workbook }) {
@@ -202,50 +204,27 @@ router.get('/:id/pdf', async (req, res) => {
         }
 
         const doc      = new PDFDocument({ margin: 50, size: 'A4' });
-        const filename = encodeURIComponent(`${workbook.student.name}_맞춤문제집.pdf`);
+        const filename = encodeURIComponent(workbook.student.name + '_맞춤문제집.pdf');
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${filename}`);
+        res.setHeader('Content-Disposition', 'attachment; filename*=UTF-8\'\'' + filename);
         doc.pipe(res);
 
-        // 표지
-        doc.fontSize(24).font('Helvetica-Bold').text('TOEIC Tailor', { align: 'center' });
-        doc.moveDown(0.5);
-        doc.fontSize(18).font('Helvetica').text(`${workbook.student.name} 맞춤 문제집`, { align: 'center' });
-        doc.moveDown(0.5);
-        doc.fontSize(12).fillColor('gray')
-            .text(`Level: ${workbook.student.level}  |  Score: ${workbook.student.totalScore}`, { align: 'center' });
-        doc.moveDown(0.5);
-        doc.fontSize(10).text(`생성일: ${new Date(workbook.createdAt).toLocaleDateString('ko-KR')}`, { align: 'center' });
-
-        // 문제 목록
-        workbook.questions.forEach((wq, idx) => {
-            const q = wq.question;
-            doc.addPage();
-            doc.fillColor('black').fontSize(11).font('Helvetica-Bold')
-                .text(`Q${idx + 1}.  [Part ${q.part} / ${q.questionType} / ${q.difficulty}]`);
-            doc.moveDown(0.3);
-            doc.fontSize(10).font('Helvetica').text(q.content, { lineGap: 3 });
-
-            if (Array.isArray(q.options) && q.options.length) {
-                doc.moveDown(0.3);
-                q.options.forEach(opt => doc.text(opt, { lineGap: 2 }));
-            }
-
-            doc.moveDown(0.5);
-            doc.fontSize(10).fillColor('#2563eb').text(`정답: ${q.answer}`);
-
-            if (q.explanation) {
-                doc.moveDown(0.2);
-                doc.fontSize(9).fillColor('#6b7280').text(`[해설] ${q.explanation}`);
-            }
+        buildWorkbookPdf(doc, {
+            studentName: workbook.student.name,
+            level: workbook.student.level,
+            totalScore: workbook.student.totalScore,
+            createdAt: workbook.createdAt,
+            questions: workbook.questions,
         });
 
         doc.end();
+
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
 
 // ─── POST /api/workbooks/pdf-zip ─────────────────────────────
 router.post('/pdf-zip', async (req, res) => {
@@ -280,33 +259,12 @@ router.post('/pdf-zip', async (req, res) => {
                 doc.on('end',   ()    => resolve(Buffer.concat(chunks)));
                 doc.on('error', reject);
 
-                // 표지
-                doc.fontSize(24).font('Helvetica-Bold').text('TOEIC Tailor', { align: 'center' });
-                doc.moveDown(0.5);
-                doc.fontSize(18).font('Helvetica').text(`${workbook.student.name} 맞춤 문제집`, { align: 'center' });
-                doc.moveDown(0.5);
-                doc.fontSize(12).fillColor('gray')
-                    .text(`Level: ${workbook.student.level}  |  Score: ${workbook.student.totalScore}`, { align: 'center' });
-
-                workbook.questions.forEach((wq, idx) => {
-                    const q = wq.question;
-                    doc.addPage();
-                    doc.fillColor('black').fontSize(11).font('Helvetica-Bold')
-                        .text(`Q${idx + 1}.  [Part ${q.part} / ${q.questionType} / ${q.difficulty}]`);
-                    doc.moveDown(0.3);
-                    doc.fontSize(10).font('Helvetica').text(q.content, { lineGap: 3 });
-
-                    if (Array.isArray(q.options) && q.options.length) {
-                        doc.moveDown(0.3);
-                        q.options.forEach(opt => doc.text(opt, { lineGap: 2 }));
-                    }
-
-                    doc.moveDown(0.5);
-                    doc.fontSize(10).fillColor('#2563eb').text(`정답: ${q.answer}`);
-                    if (q.explanation) {
-                        doc.moveDown(0.2);
-                        doc.fontSize(9).fillColor('#6b7280').text(`[해설] ${q.explanation}`);
-                    }
+                buildWorkbookPdf(doc, {
+                    studentName: workbook.student.name,
+                    level: workbook.student.level,
+                    totalScore: workbook.student.totalScore,
+                    createdAt: workbook.createdAt,
+                    questions: workbook.questions,
                 });
 
                 doc.end();
@@ -320,5 +278,68 @@ router.post('/pdf-zip', async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
+
+// PDF 문서 공통 생성 헬퍼
+function buildWorkbookPdf(doc, {studentName, level, totalScore, createdAt, questions}) {
+    // 폰트 등록
+    doc.registerFont('Korean', FONT_REGULAR);
+
+    // ── 표지 ──────────────────────────────────────────
+    doc.font('Korean').fontSize(28).text('TOEIC Tailor', {align: 'center'});
+    doc.moveDown(0.5);
+    doc.fontSize(20).text(studentName + ' 맞춤 문제집', {align: 'center'});
+    doc.moveDown(0.5);
+    doc.fontSize(13).fillColor('gray')
+        .text('Level: ' + level + '  |  Score: ' + totalScore, {align: 'center'});
+    doc.moveDown(0.3);
+    doc.fontSize(10)
+        .text('생성일: ' + new Date(createdAt).toLocaleDateString('ko-KR'), {align: 'center'});
+
+    // ── 문제 페이지 ────────────────────────────────────
+    questions.forEach((wq, idx) => {
+        const q = wq.question;
+        doc.addPage();
+        doc.fillColor('black').fontSize(11).font('Korean')
+            .text('Q' + (idx + 1) + '.  [Part ' + q.part + ' / ' + q.questionType + ' / ' + q.difficulty + ']');
+        doc.moveDown(0.3);
+        doc.fontSize(10).text(q.content, {lineGap: 3});
+
+        if (Array.isArray(q.options) && q.options.length) {
+            doc.moveDown(0.3);
+            q.options.forEach(opt => doc.text(opt, {lineGap: 2}));
+        }
+    });
+
+    // ── 정답 모음 (마지막 페이지) ──────────────────────
+    doc.addPage();
+    doc.fillColor('black').fontSize(14).font('Korean')
+        .text('[ 정답 모음 ]', {align: 'center'});
+    doc.moveDown(1);
+
+    const cols = 5;
+    const colW = (doc.page.width - 100) / cols;
+    let col = 0;
+    let startX = 50;
+    let currentY = doc.y;
+
+    questions.forEach((wq, idx) => {
+        const q = wq.question;
+        const x = startX + (col % cols) * colW;
+        const line = 'Q' + (idx + 1) + '. ' + q.answer;
+
+        doc.fontSize(10).text(line, x, currentY, {width: colW, lineBreak: false});
+
+        col++;
+        if (col % cols === 0) {
+            currentY += 20;
+            if (currentY > doc.page.height - 80) {
+                doc.addPage();
+                currentY = 50;
+            }
+        }
+    });
+}
+
 
 module.exports = router;
