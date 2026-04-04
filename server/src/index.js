@@ -13,6 +13,7 @@ app.use('/api/upload',    require('./routes/upload'));
 app.use('/api/workbooks', require('./routes/workbooks'));
 app.use('/api/orders',    require('./routes/orders'));
 app.use('/api/questions', require('./routes/questions'));
+app.use('/api/settings', require('./routes/settings'));
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 

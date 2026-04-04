@@ -69,3 +69,7 @@ export const downloadWorkbookPdf = (id) =>
 
 export const downloadWorkbooksZip = (workbookIds) =>
     api.post('/workbooks/pdf-zip', { workbookIds }, { responseType: 'blob' });
+
+// 설정
+export const getSettings    = ()     => api.get('/settings');
+export const updateSettings = (data) => api.put('/settings', data);

@@ -27,9 +27,9 @@ async function buildSelectionCriteria({ level, weakParts }) {
     };
 
     return {
-        weakPartNums,                          // 집중할 파트 번호 배열
-        difficultyRatio: difficultyMap[level], // 난이도 비율
-        totalQuestions: 20,                    // 문제집 총 문제수
+        weakPartNums,
+        difficultyRatio: difficultyMap[level],
+        totalQuestions:  parseInt(process.env.WORKBOOK_DEFAULT_QUESTIONS) || 20,
     };
 }
 

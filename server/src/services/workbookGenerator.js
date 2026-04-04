@@ -2,9 +2,11 @@ const { prisma }       = require('../lib/prisma');
 const ai               = require('../ai/aiProvider');
 const { getWeakParts } = require('./levelAnalyzer');
 
-const MIN_PAGES       = 24; // SweetBook 최소 페이지
-const COVER_PAGES     = 1;  // 표지 1페이지
-const MAX_QUESTIONS   = MIN_PAGES - COVER_PAGES; // 최대 문제 수 (23)
+// 환경변수로 조정 가능
+const MIN_PAGES     = parseInt(process.env.WORKBOOK_MIN_PAGES)     || 24;
+const COVER_PAGES   = 1;
+const MAX_QUESTIONS = parseInt(process.env.WORKBOOK_MAX_QUESTIONS) || 23;
+const DEFAULT_QUESTIONS = parseInt(process.env.WORKBOOK_DEFAULT_QUESTIONS) || 20;
 
 // TODO : 오답 이력 쌓이면 유형별 데이터로 GRAMMAR/VOCABULARY 재구성 (유사/동의/반어 등)
 function getPart5TypeWeights(scoreRecord, level) {

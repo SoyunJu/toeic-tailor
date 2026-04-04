@@ -4,6 +4,7 @@ import Students from './pages/Students';
 import Student from './pages/Student';
 import Orders from './pages/Orders';
 import Generate from './pages/Generate';
+import Settings from './pages/Settings';
 
 function Nav() {
   const base = 'px-4 py-2 rounded text-sm font-medium transition-colors ';
@@ -17,6 +18,7 @@ function Nav() {
         <NavLink to="/students" className={({ isActive }) => isActive ? active : inactive}>학생 목록</NavLink>
         <NavLink to="/orders"   className={({ isActive }) => isActive ? active : inactive}>주문 목록</NavLink>
           <NavLink to="/generate" className={({isActive}) => isActive ? active : inactive}>기출 생성</NavLink>
+          <NavLink to="/settings" className={({ isActive }) => isActive ? active : inactive}>설정</NavLink>
       </nav>
   );
 }
@@ -34,6 +36,7 @@ export default function App() {
               <Route path="/students/:id" element={<Student />} />
               <Route path="/orders"      element={<Orders />} />
                 <Route path="/generate" element={<Generate/>}/>
+                <Route path="/settings" element={<Settings />} />
             </Routes>
           </main>
         </div>

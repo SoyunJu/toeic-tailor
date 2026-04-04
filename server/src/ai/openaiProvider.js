@@ -81,7 +81,7 @@ async function buildSelectionCriteria({level, weakParts}) {
                     {
                       "weakPartNums": [취약파트 번호 배열],
                       "difficultyRatio": { "LOW": 0.0~1.0, "MEDIUM": 0.0~1.0, "HIGH": 0.0~1.0 },
-                      "totalQuestions": 20
+                      "totalQuestions": ${parseInt(process.env.WORKBOOK_DEFAULT_QUESTIONS) || 20}
                     }
                 difficultyRatio 합계는 반드시 1.0이어야 합니다.`,
             },
