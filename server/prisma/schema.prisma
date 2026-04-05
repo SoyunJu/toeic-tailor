@@ -129,3 +129,9 @@ model WorkbookQuestion {
 
   @@unique([workbookId, questionId])
 }
+
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}

@@ -3,10 +3,12 @@ import axios from 'axios';
 const api = axios.create({ baseURL: '/api' });
 
 // 학생
-export const getStudents    = (params) => api.get('/students', { params });
-export const getStudent     = (id)     => api.get(`/students/${id}`);
-export const updateStudent  = (id, data) => api.put(`/students/${id}`, data);
-export const deleteStudent  = (id)     => api.delete(`/students/${id}`);
+export const getStudents      = (params)         => api.get('/students', { params });
+export const getStudent       = (id)             => api.get(`/students/${id}`);
+export const updateStudent    = (id, data)       => api.put(`/students/${id}`, data);
+export const deleteStudent    = (id)             => api.delete(`/students/${id}`);
+export const deleteScoreRecord = (studentId, scoreId) =>
+    api.delete(`/students/${studentId}/scores/${scoreId}`);
 
 // 업로드
 export const uploadScores = (file) => {
@@ -21,9 +23,9 @@ export const updateQuestion  = (id, data) => api.put(`/questions/${id}`, data);
 export const deleteQuestion  = (id) => api.delete(`/questions/${id}`);
 
 // 기출
-export const generateWorkbook = (studentId) =>
-    api.post('/workbooks/generate', { studentId });
-export const getWorkbook = (id) => api.get(`/workbooks/${id}`);
+export const generateWorkbook  = (studentId) => api.post('/workbooks/generate', { studentId });
+export const getWorkbook       = (id)        => api.get(`/workbooks/${id}`);
+export const regenerateWorkbook = (id)       => api.post(`/workbooks/${id}/regenerate`);
 
 // 주문
 export const createOrder = (data)              => api.post('/orders', data);

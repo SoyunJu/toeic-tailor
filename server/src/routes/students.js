@@ -202,4 +202,45 @@ router.post('/', async (req, res) => {
     }
 });
 
+// DELETE /api/students/:id/scores/:scoreId
+router.delete('/:id/scores/:scoreId', async (req, res) => {
+    try {
+        const studentId = parseInt(req.params.id);
+        const scoreId   = parseInt(req.params.scoreId);
+
+        // 권한 검증: 해당 학생의 점수인지 확인
+        const scoreRecord = await prisma.scoreRecord.findFirst({
+            where: { id: scoreId, studentId },
+        });
+        if (!scoreRecord) {
+            return res.status(404).json({ success: false, message: '점수 기록을 찾을 수 없습니다.' });
+        }
+
+        await prisma.scoreRecord.delete({ where: { id: scoreId } });
+
+        // 남은 최신 점수로 학생 정보 재계산
+        const { getLevel } = require('../services/levelAnalyzer');
+        const latest = await prisma.scoreRecord.findFirst({
+            where:   { studentId },
+            orderBy: { takenAt: 'desc' },
+        });
+
+        await prisma.student.update({
+            where: { id: studentId },
+            data: latest
+                ? {
+                    totalScore: latest.totalScore,
+                    lcScore:    latest.lcScore,
+                    rcScore:    latest.rcScore,
+                    level:      getLevel(latest.totalScore),
+                }
+                : { totalScore: null, lcScore: null, rcScore: null, level: null },
+        });
+
+        res.json({ success: true, message: '점수 기록이 삭제되었습니다.' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;

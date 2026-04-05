@@ -3,6 +3,8 @@ import * as XLSX from 'xlsx';
 import { uploadScores, getQuestions, updateQuestion, deleteQuestion } from '../api';
 import axios from 'axios';
 import Pagination from '../components/Pagination';
+import { SkeletonRow } from '../components/Skeleton';
+import { QUESTION_TYPES, DIFFICULTIES } from '../constants';
 
 const TABS = ['학생 정보', '기출 업로드', '문제 관리'];
 const Q_PAGE_SIZE = 20;
@@ -87,19 +89,19 @@ function StudentUploadTab() {
             <div className="flex gap-2">
                 <button onClick={() => setMode('excel')}
                         className={`px-4 py-2 rounded text-sm font-medium border transition
-            ${mode === 'excel' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+            ${mode === 'excel' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
                      Excel 연동
                 </button>
                 <button onClick={() => setMode('manual')}
                         className={`px-4 py-2 rounded text-sm font-medium border transition
-            ${mode === 'manual' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+            ${mode === 'manual' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
                      직접 입력
                 </button>
             </div>
 
             {/* Excel 모드 */}
             {mode === 'excel' && (
-                <div className="bg-white rounded-xl border p-6 space-y-4">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-6 space-y-4">
                     {/* 컬럼 예시 토글 */}
                     <button onClick={() => setShowSample(p => !p)}
                             className="text-sm text-blue-600 hover:underline">
@@ -107,20 +109,20 @@ function StudentUploadTab() {
                     </button>
 
                     {showSample && (
-                        <div className="overflow-x-auto rounded border text-xs">
+                        <div className="overflow-x-auto rounded border dark:border-gray-600 text-xs">
                             <table className="w-full min-w-max">
-                                <thead className="bg-gray-50 text-gray-500">
+                                <thead className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                                 <tr>
                                     {SAMPLE_COLS.map(c => (
                                         <th key={c} className="px-3 py-2 text-left font-medium whitespace-nowrap">{c}</th>
                                     ))}
                                 </tr>
                                 </thead>
-                                <tbody className="divide-y">
+                                <tbody className="divide-y dark:divide-gray-600">
                                 {SAMPLE_ROWS.map((row, i) => (
                                     <tr key={i}>
                                         {SAMPLE_COLS.map(c => (
-                                            <td key={c} className="px-3 py-2 whitespace-nowrap text-gray-600">{row[c]}</td>
+                                            <td key={c} className="px-3 py-2 whitespace-nowrap text-gray-600 dark:text-gray-300">{row[c]}</td>
                                         ))}
                                     </tr>
                                 ))}
@@ -130,7 +132,7 @@ function StudentUploadTab() {
                     )}
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                             Excel 파일 선택 (.xlsx)
                         </label>
                         <input type="file" accept=".xlsx,.xls"
@@ -143,21 +145,21 @@ function StudentUploadTab() {
                     {/* 미리보기 */}
                     {preview && (
                         <div>
-                            <p className="text-xs text-gray-500 mb-1">미리보기 (최대 5행)</p>
-                            <div className="overflow-x-auto rounded border text-xs">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">미리보기 (최대 5행)</p>
+                            <div className="overflow-x-auto rounded border dark:border-gray-600 text-xs">
                                 <table className="w-full min-w-max">
-                                    <thead className="bg-gray-50 text-gray-500">
+                                    <thead className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                                     <tr>
                                         {Object.keys(preview[0]).map(c => (
                                             <th key={c} className="px-3 py-2 text-left font-medium whitespace-nowrap">{c}</th>
                                         ))}
                                     </tr>
                                     </thead>
-                                    <tbody className="divide-y">
+                                    <tbody className="divide-y dark:divide-gray-600">
                                     {preview.map((row, i) => (
                                         <tr key={i}>
                                             {Object.values(row).map((v, j) => (
-                                                <td key={j} className="px-3 py-2 whitespace-nowrap text-gray-600">
+                                                <td key={j} className="px-3 py-2 whitespace-nowrap text-gray-600 dark:text-gray-300">
                                                     {v instanceof Date ? v.toLocaleDateString('ko-KR') : String(v)}
                                                 </td>
                                             ))}
@@ -180,19 +182,19 @@ function StudentUploadTab() {
 
             {/* 수동 입력 모드 */}
             {mode === 'manual' && (
-                <div className="bg-white rounded-xl border p-6 space-y-4">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-6 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                         <div>
-                            <label className="block text-gray-600 mb-1">이름 *</label>
+                            <label className="block text-gray-600 dark:text-gray-400 mb-1">이름 *</label>
                             <input type="text" value={form.name}
                                    onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                                   className="border rounded px-3 py-2 w-full" />
+                                   className="border dark:border-gray-600 rounded px-3 py-2 w-full dark:bg-gray-700 dark:text-gray-100" />
                         </div>
                         <div>
-                            <label className="block text-gray-600 mb-1">반</label>
+                            <label className="block text-gray-600 dark:text-gray-400 mb-1">반</label>
                             <select value={form.className}
                                     onChange={e => setForm(p => ({ ...p, className: e.target.value }))}
-                                    className="border rounded px-3 py-2 w-full">
+                                    className="border dark:border-gray-600 rounded px-3 py-2 w-full dark:bg-gray-700 dark:text-gray-100">
                                 <option value="">선택</option>
                                 <option value="TARGET_600">600목표반</option>
                                 <option value="TARGET_800">800목표반</option>
@@ -200,52 +202,52 @@ function StudentUploadTab() {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-gray-600 mb-1">수업 유형</label>
+                            <label className="block text-gray-600 dark:text-gray-400 mb-1">수업 유형</label>
                             <select value={form.classType}
                                     onChange={e => setForm(p => ({ ...p, classType: e.target.value }))}
-                                    className="border rounded px-3 py-2 w-full">
+                                    className="border dark:border-gray-600 rounded px-3 py-2 w-full dark:bg-gray-700 dark:text-gray-100">
                                 <option value="">선택</option>
                                 <option value="WEEKDAY">평일반</option>
                                 <option value="WEEKEND">주말반</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-gray-600 mb-1">LC 점수</label>
+                            <label className="block text-gray-600 dark:text-gray-400 mb-1">LC 점수</label>
                             <input type="number" value={form.lcScore}
                                    onChange={e => setForm(p => ({ ...p, lcScore: e.target.value }))}
-                                   className="border rounded px-3 py-2 w-full" />
+                                   className="border dark:border-gray-600 rounded px-3 py-2 w-full dark:bg-gray-700 dark:text-gray-100" />
                         </div>
                         <div>
-                            <label className="block text-gray-600 mb-1">RC 점수</label>
+                            <label className="block text-gray-600 dark:text-gray-400 mb-1">RC 점수</label>
                             <input type="number" value={form.rcScore}
                                    onChange={e => setForm(p => ({ ...p, rcScore: e.target.value }))}
-                                   className="border rounded px-3 py-2 w-full" />
+                                   className="border dark:border-gray-600 rounded px-3 py-2 w-full dark:bg-gray-700 dark:text-gray-100" />
                         </div>
                         <div>
-                            <label className="block text-gray-600 mb-1">수강등록일</label>
+                            <label className="block text-gray-600 dark:text-gray-400 mb-1">수강등록일</label>
                             <input type="date" value={form.enrolledAt}
                                    onChange={e => setForm(p => ({ ...p, enrolledAt: e.target.value }))}
-                                   className="border rounded px-3 py-2 w-full" />
+                                   className="border dark:border-gray-600 rounded px-3 py-2 w-full dark:bg-gray-700 dark:text-gray-100" />
                         </div>
                         <div>
-                            <label className="block text-gray-600 mb-1">수강만료일</label>
+                            <label className="block text-gray-600 dark:text-gray-400 mb-1">수강만료일</label>
                             <input type="date" value={form.expiresAt}
                                    onChange={e => setForm(p => ({ ...p, expiresAt: e.target.value }))}
-                                   className="border rounded px-3 py-2 w-full" />
+                                   className="border dark:border-gray-600 rounded px-3 py-2 w-full dark:bg-gray-700 dark:text-gray-100" />
                         </div>
                     </div>
 
                     {/* 파트별 정답수 */}
                     <div>
-                        <p className="text-sm font-medium text-gray-700 mb-2">파트별 정답수 (선택)</p>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">파트별 정답수 (선택)</p>
                         <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 text-xs">
                             {[1,2,3,4,5,6,7].map(p => (
                                 <div key={p}>
-                                    <label className="block text-gray-500 mb-1 text-center">Part {p}</label>
+                                    <label className="block text-gray-500 dark:text-gray-400 mb-1 text-center">Part {p}</label>
                                     <input type="number"
                                            value={form[`part${p}Correct`]}
                                            onChange={e => setForm(prev => ({ ...prev, [`part${p}Correct`]: e.target.value }))}
-                                           className="border rounded px-2 py-1.5 w-full text-center" />
+                                           className="border dark:border-gray-600 rounded px-2 py-1.5 w-full text-center dark:bg-gray-700 dark:text-gray-100" />
                                 </div>
                             ))}
                         </div>
@@ -297,13 +299,13 @@ function ExamUploadTab() {
     }
 
     return (
-        <div className="bg-white rounded-xl border p-6 space-y-4">
-            <p className="text-sm text-gray-500">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-6 space-y-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
                 RC 기출 PDF를 업로드하면 AI가 문제를 자동 분석해 DB에 저장합니다.<br />
                 저장된 문제는 개인별 맞춤 기출 생성에 활용됩니다.
             </p>
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">PDF 파일 선택</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">PDF 파일 선택</label>
                 <input type="file" accept=".pdf"
                        onChange={e => setFile(e.target.files[0])}
                        className="block w-full text-sm text-gray-500
@@ -326,13 +328,13 @@ function ExamUploadTab() {
                     </div>
 
                     {result.questions?.length > 0 && (
-                        <div className="border rounded-xl overflow-hidden">
-                            <div className="bg-gray-50 px-4 py-2 border-b text-sm font-medium text-gray-700">
+                        <div className="border dark:border-gray-700 rounded-xl overflow-hidden">
+                            <div className="bg-gray-50 dark:bg-gray-700 px-4 py-2 border-b dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200">
                                 추출된 문제 목록
                             </div>
-                            <div className="divide-y max-h-96 overflow-y-auto">
+                            <div className="divide-y dark:divide-gray-700 max-h-96 overflow-y-auto">
                                 {result.questions.map((q, i) => (
-                                    <div key={i} className="px-4 py-3 text-sm space-y-1">
+                                    <div key={i} className="px-4 py-3 text-sm space-y-1 dark:bg-gray-800">
                                         <div className="flex gap-2 flex-wrap">
                                             <span
                                                 className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">Part {q.part}</span>
@@ -343,7 +345,7 @@ function ExamUploadTab() {
                                             <span
                                                 className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">정답: {q.answer}</span>
                                         </div>
-                                        <p className="text-gray-700 whitespace-pre-wrap">{q.content}</p>
+                                        <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{q.content}</p>
                                         {q.options?.length > 0 && (
                                             <div className="text-gray-500 text-xs space-y-0.5">
                                                 {q.options.map((opt, j) => (
@@ -368,13 +370,6 @@ function ExamUploadTab() {
     );
 }
 
-const QUESTION_TYPES = [
-    'PHOTO_DESCRIPTION', 'SHORT_RESPONSE', 'SHORT_CONVERSATION', 'LONG_TALK',
-    'GRAMMAR', 'VOCABULARY', 'SHORT_PASSAGE_FILL',
-    'SINGLE_PASSAGE', 'DOUBLE_PASSAGE', 'TRIPLE_PASSAGE',
-];
-const DIFFICULTIES = ['LOW', 'MEDIUM', 'HIGH'];
-
 // 인라인 편집 행 컴포넌트
 function QuestionRow({ q, selected, onToggle, onSave, onDelete }) {
     const [editing, setEditing] = useState(false);
@@ -393,7 +388,7 @@ function QuestionRow({ q, selected, onToggle, onSave, onDelete }) {
     }
 
     return (
-        <tr className={`border-b text-sm ${editing ? 'bg-blue-50' : selected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+        <tr className={`border-b dark:border-gray-700 text-sm ${editing ? 'bg-blue-50 dark:bg-blue-900/20' : selected ? 'bg-blue-50 dark:bg-blue-900/10' : 'hover:bg-gray-50 dark:hover:bg-gray-700/30'}`}>
             {/* 체크박스 */}
             <td className="px-3 py-2 text-center">
                 <input
@@ -406,7 +401,7 @@ function QuestionRow({ q, selected, onToggle, onSave, onDelete }) {
             </td>
 
             {/* ID */}
-            <td className="px-3 py-2 text-gray-400 text-xs">{q.id}</td>
+            <td className="px-3 py-2 text-gray-400 dark:text-gray-500 text-xs hidden sm:table-cell">{q.id}</td>
 
             {/* Part */}
             <td className="px-3 py-2">
@@ -452,7 +447,7 @@ function QuestionRow({ q, selected, onToggle, onSave, onDelete }) {
 
             {/* 문제 내용 (축약) */}
             <td className="px-3 py-2 max-w-xs">
-                <p className="text-xs text-gray-600 truncate">{q.content}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-300 truncate">{q.content}</p>
             </td>
 
             {/* 정답 */}
@@ -469,14 +464,14 @@ function QuestionRow({ q, selected, onToggle, onSave, onDelete }) {
             </td>
 
             {/* 중복수 */}
-            <td className="px-3 py-2 text-center">
-        <span className={`text-xs font-medium ${q.duplicateCount > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
+            <td className="px-3 py-2 text-center hidden md:table-cell">
+        <span className={`text-xs font-medium ${q.duplicateCount > 0 ? 'text-orange-600' : 'text-gray-400 dark:text-gray-500'}`}>
           {q.duplicateCount > 0 ? `+${q.duplicateCount}` : '-'}
         </span>
             </td>
 
             {/* 출처 */}
-            <td className="px-3 py-2 text-xs text-gray-400 max-w-xs truncate">{q.source}</td>
+            <td className="px-3 py-2 text-xs text-gray-400 dark:text-gray-500 max-w-xs truncate hidden md:table-cell">{q.source}</td>
 
             {/* 액션 */}
             <td className="px-3 py-2">
@@ -488,18 +483,18 @@ function QuestionRow({ q, selected, onToggle, onSave, onDelete }) {
                                 저장
                             </button>
                             <button onClick={() => setEditing(false)}
-                                    className="px-2 py-1 text-xs border rounded hover:bg-gray-50">
+                                    className="px-2 py-1 text-xs border dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-gray-300">
                                 취소
                             </button>
                         </>
                     ) : (
                         <>
                             <button onClick={() => setEditing(true)}
-                                    className="px-2 py-1 text-xs border rounded hover:bg-gray-50">
+                                    className="px-2 py-1 text-xs border dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-gray-300">
                                 편집
                             </button>
                             <button onClick={() => onDelete(q.id)}
-                                    className="px-2 py-1 text-xs border border-red-200 text-red-500 rounded hover:bg-red-50">
+                                    className="px-2 py-1 text-xs border border-red-200 text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-900/30">
                                 삭제
                             </button>
                         </>
@@ -608,9 +603,9 @@ function QuestionManagerTab() {
         <div className="space-y-4">
             {/* 헤더 */}
             <div className="flex items-center justify-between flex-wrap gap-2">
-                <h2 className="text-sm font-medium text-gray-700">전체 {total}문항</h2>
+                <h2 className="text-sm font-medium text-gray-700 dark:text-gray-200">전체 {total}문항</h2>
                 <button onClick={load}
-                        className="text-xs px-3 py-1.5 border rounded hover:bg-gray-50">
+                        className="text-xs px-3 py-1.5 border dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300">
                     🔄 새로고침
                 </button>
             </div>
@@ -618,30 +613,30 @@ function QuestionManagerTab() {
             {/* 필터 */}
             <div className="flex flex-wrap gap-2">
                 <select value={filterPart} onChange={e => setFilterPart(e.target.value)}
-                        className="border rounded px-3 py-2 text-sm">
+                        className="border dark:border-gray-600 rounded px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100">
                     <option value="">전체 파트</option>
                     {[1, 2, 3, 4, 5, 6, 7].map(p => <option key={p} value={p}>Part {p}</option>)}
                 </select>
                 <select value={filterType} onChange={e => setFilterType(e.target.value)}
-                        className="border rounded px-3 py-2 text-sm">
+                        className="border dark:border-gray-600 rounded px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100">
                     <option value="">전체 유형</option>
                     {QUESTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
                 <select value={filterDiff} onChange={e => setFilterDiff(e.target.value)}
-                        className="border rounded px-3 py-2 text-sm">
+                        className="border dark:border-gray-600 rounded px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100">
                     <option value="">전체 난이도</option>
                     {DIFFICULTIES.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
                 <input type="text" placeholder="문제 내용 검색"
                        value={filterSearch}
                        onChange={e => setFilterSearch(e.target.value)}
-                       className="border rounded px-3 py-2 text-sm w-48"/>
+                       className="border dark:border-gray-600 rounded px-3 py-2 text-sm w-48 dark:bg-gray-800 dark:text-gray-100"/>
             </div>
 
             {/* 선택 액션 바 */}
             {questions.length > 0 && (
-                <div className="flex items-center gap-3 flex-wrap bg-gray-50 border rounded-lg px-4 py-2">
-                    <span className="text-xs text-gray-500">
+                <div className="flex items-center gap-3 flex-wrap bg-gray-50 dark:bg-gray-700/50 border dark:border-gray-600 rounded-lg px-4 py-2">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
                         {selectedIds.size > 0
                             ? `${selectedIds.size}개 선택됨`
                             : '문제를 선택하세요'}
@@ -649,14 +644,14 @@ function QuestionManagerTab() {
                     <div className="flex gap-2 ml-auto">
                         <button
                             onClick={selectAll}
-                            className="text-xs px-3 py-1.5 border rounded hover:bg-white transition">
+                            className="text-xs px-3 py-1.5 border dark:border-gray-500 rounded hover:bg-white dark:hover:bg-gray-600 dark:text-gray-300 transition">
                             전체 선택 ({questions.length})
                         </button>
                         {selectedIds.size > 0 && (
                             <>
                                 <button
                                     onClick={clearSelection}
-                                    className="text-xs px-3 py-1.5 border rounded hover:bg-white transition">
+                                    className="text-xs px-3 py-1.5 border dark:border-gray-500 rounded hover:bg-white dark:hover:bg-gray-600 dark:text-gray-300 transition">
                                     선택 해제
                                 </button>
                                 <button
@@ -673,67 +668,65 @@ function QuestionManagerTab() {
             )}
 
             {/* 테이블 */}
-            {loading ? (
-                <p className="text-gray-400 text-sm">불러오는 중...</p>
-            ) : (
-                <>
-                    <div className="bg-white rounded-xl border overflow-x-auto">
-                        <table className="w-full text-sm min-w-[960px]">
-                            <thead className="bg-gray-50 text-gray-500 text-xs uppercase border-b">
-                            <tr>
-                                <th className="px-3 py-3 text-center w-10">
-                                    <input
-                                        type="checkbox"
-                                        checked={allPageSelected}
-                                        ref={el => { if (el) el.indeterminate = somePageSelected && !allPageSelected; }}
-                                        onChange={togglePageAll}
-                                        className="w-4 h-4 accent-blue-600"
-                                        title="현재 페이지 전체 선택"
-                                    />
-                                </th>
-                                <th className="px-3 py-3 text-left">ID</th>
-                                <th className="px-3 py-3 text-left">파트</th>
-                                <th className="px-3 py-3 text-left">유형</th>
-                                <th className="px-3 py-3 text-left">난이도</th>
-                                <th className="px-3 py-3 text-left">문제 내용</th>
-                                <th className="px-3 py-3 text-left">정답</th>
-                                <th className="px-3 py-3 text-center">중복 횟수</th>
-                                <th className="px-3 py-3 text-left">출처</th>
-                                <th className="px-3 py-3"></th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {pagedQuestions.length === 0 ? (
-                                <tr>
-                                    <td colSpan={10} className="px-3 py-8 text-center text-gray-400 text-sm">
-                                        문제가 없습니다.
-                                    </td>
-                                </tr>
-                            ) : (
-                                pagedQuestions.map(q => (
-                                    <QuestionRow
-                                        key={q.id}
-                                        q={q}
-                                        selected={selectedIds.has(q.id)}
-                                        onToggle={() => toggleOne(q.id)}
-                                        onSave={load}
-                                        onDelete={handleDelete}
-                                    />
-                                ))
+            <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-x-auto">
+                <table className="w-full text-sm min-w-[700px]">
+                    <thead className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 text-xs uppercase border-b dark:border-gray-700">
+                    <tr>
+                        <th className="px-3 py-3 text-center w-10">
+                            {!loading && (
+                                <input
+                                    type="checkbox"
+                                    checked={allPageSelected}
+                                    ref={el => { if (el) el.indeterminate = somePageSelected && !allPageSelected; }}
+                                    onChange={togglePageAll}
+                                    className="w-4 h-4 accent-blue-600"
+                                    title="현재 페이지 전체 선택"
+                                />
                             )}
-                            </tbody>
-                        </table>
-                    </div>
+                        </th>
+                        <th className="px-3 py-3 text-left hidden sm:table-cell">ID</th>
+                        <th className="px-3 py-3 text-left">파트</th>
+                        <th className="px-3 py-3 text-left">유형</th>
+                        <th className="px-3 py-3 text-left">난이도</th>
+                        <th className="px-3 py-3 text-left">문제 내용</th>
+                        <th className="px-3 py-3 text-left">정답</th>
+                        <th className="px-3 py-3 text-center hidden md:table-cell">중복 횟수</th>
+                        <th className="px-3 py-3 text-left hidden md:table-cell">출처</th>
+                        <th className="px-3 py-3"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {loading ? (
+                        Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} cols={10} />)
+                    ) : pagedQuestions.length === 0 ? (
+                        <tr>
+                            <td colSpan={10} className="px-3 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">
+                                문제가 없습니다.
+                            </td>
+                        </tr>
+                    ) : (
+                        pagedQuestions.map(q => (
+                            <QuestionRow
+                                key={q.id}
+                                q={q}
+                                selected={selectedIds.has(q.id)}
+                                onToggle={() => toggleOne(q.id)}
+                                onSave={load}
+                                onDelete={handleDelete}
+                            />
+                        ))
+                    )}
+                    </tbody>
+                </table>
+            </div>
 
-                    <Pagination
-                        page={page}
-                        totalPages={totalPages}
-                        totalItems={questions.length}
-                        pageSize={Q_PAGE_SIZE}
-                        onChange={p => { setPage(p); setSelectedIds(new Set()); }}
-                    />
-                </>
-            )}
+            <Pagination
+                page={page}
+                totalPages={totalPages}
+                totalItems={questions.length}
+                pageSize={Q_PAGE_SIZE}
+                onChange={p => { setPage(p); setSelectedIds(new Set()); }}
+            />
         </div>
     );
 }
@@ -744,14 +737,14 @@ export default function Upload() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold mb-6"> 업로드</h1>
+            <h1 className="text-2xl font-bold mb-6 dark:text-gray-100"> 업로드</h1>
 
             {/* 탭 */}
-            <div className="flex gap-1 mb-6 border-b">
+            <div className="flex gap-1 mb-6 border-b dark:border-gray-700">
                 {TABS.map((t, i) => (
                     <button key={i} onClick={() => setTab(i)}
                             className={`px-4 py-2 text-sm font-medium border-b-2 transition
-              ${tab === i ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              ${tab === i ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
                         {t}
                     </button>
                 ))}

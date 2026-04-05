@@ -396,4 +396,47 @@ router.delete('/:id/book', async (req, res) => {
 });
 
 
+// ─── POST /api/workbooks/:id/regenerate ──────────────────────
+router.post('/:id/regenerate', async (req, res) => {
+    try {
+        const workbookId = parseInt(req.params.id);
+
+        const oldWorkbook = await prisma.workbook.findUnique({
+            where:   { id: workbookId },
+            include: { student: true },
+        });
+        if (!oldWorkbook) {
+            return res.status(404).json({ success: false, message: '문제집을 찾을 수 없습니다.' });
+        }
+
+        const { studentId, student } = oldWorkbook;
+
+        // 기존 문제집 삭제 (WorkbookQuestion은 cascade 삭제)
+        await prisma.workbook.delete({ where: { id: workbookId } });
+
+        // 새 문제집 생성
+        const { workbook: newWorkbook, analysis, criteria } = await generateWorkbook(
+            studentId,
+            { singleMode: true },
+        );
+
+        // SweetBook 재배포
+        const bookUid = await trySweetBookPublish({ student, workbook: newWorkbook });
+
+        res.json({
+            success: true,
+            message: '문제집 재생성 완료',
+            data: {
+                workbookId:     newWorkbook.id,
+                bookUid,
+                totalQuestions: newWorkbook.questions.length,
+                analysis,
+            },
+        });
+    } catch (err) {
+        console.error('[REGENERATE] 에러:', err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;
