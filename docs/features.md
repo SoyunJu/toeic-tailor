@@ -7,7 +7,6 @@
 ## 1. 학생 관리 (`/`)
 
 ![학생 목록](screenshots/dashboard-main.png)
-<!-- 스크린샷 필요: 학생 목록 테이블 전체 화면. 파일명: dashboard-main.png -->
 
 ### 기능
 
@@ -33,7 +32,6 @@
 ## 2. 학생 상세 (`/students/:id`)
 
 ![학생 상세](screenshots/student-detail.png)
-<!-- 스크린샷 필요: 학생 상세 페이지. 상단 정보 카드 + 취약파트 바 + 점수 이력 테이블. 파일명: student-detail.png -->
 
 ### 기능
 
@@ -50,7 +48,6 @@
 ### 탭 1 — 학생 정보
 
 ![학생 업로드](screenshots/upload-student.png)
-<!-- 스크린샷 필요: 업로드 페이지 탭1, Excel 모드 + 미리보기 테이블 표시 상태. 파일명: upload-student.png -->
 
 **Excel 연동 모드**
 1. "▼ 컬럼 예시 보기" 버튼으로 필요한 컬럼 형식 확인
@@ -65,7 +62,6 @@
 ### 탭 2 — 기출 업로드
 
 ![기출 업로드](screenshots/upload-exam.png)
-<!-- 스크린샷 필요: 업로드 탭2, PDF 업로드 후 추출된 문제 목록이 보이는 화면. 파일명: upload-exam.png -->
 
 1. RC 기출 PDF 파일 선택
 2. "업로드 + AI 분석" 클릭
@@ -80,7 +76,6 @@
 ### 탭 3 — 문제 관리
 
 ![문제 관리](screenshots/upload-questions.png)
-<!-- 스크린샷 필요: 업로드 탭3, 문제 테이블 + 체크박스 선택 + 선택 액션 바 표시 상태. 파일명: upload-questions.png -->
 
 - **필터** — 파트, 유형, 난이도, 내용 검색
 - **체크박스 선택** — 현재 페이지 전체 선택 (헤더 체크박스, indeterminate 지원), 전체 문제 선택, 선택 해제
@@ -94,7 +89,6 @@
 ## 4. 기출 생성 (`/generate`)
 
 ![기출 생성](screenshots/generate.png)
-<!-- 스크린샷 필요: 생성 페이지, 좌측 학생 체크리스트 + 우측 실시간 진행 상태 패널. 파일명: generate.png -->
 
 ### 사용 방법
 
@@ -117,10 +111,8 @@
 ## 5. 주문 목록 (`/orders`)
 
 ![주문 목록](screenshots/orders.png)
-<!-- 스크린샷 필요: 주문 목록 페이지, 주문 그룹 카드 + 학생 목록 + 상태 뱃지. 파일명: orders.png -->
 
 ![PDF 미리보기](screenshots/pdf-preview.png)
-<!-- 스크린샷 필요: PDF 인라인 뷰어 모달이 열린 상태 (문제집 PDF가 iframe에 표시됨). 파일명: pdf-preview.png -->
 
 ### 탭 1 — 주문 목록
 
@@ -142,7 +134,6 @@
 ## 6. 설정 (`/settings`)
 
 ![설정 페이지](screenshots/settings.png)
-<!-- 스크린샷 필요: 설정 페이지 전체 화면 (문제 수 입력 필드 + AI 프로바이더 선택). 파일명: settings.png -->
 
 | 설정 항목 | 설명 |
 |-----------|------|
