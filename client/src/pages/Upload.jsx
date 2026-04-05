@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { uploadScores, getQuestions, updateQuestion, deleteQuestion } from '../api';
 import axios from 'axios';
+import Pagination from '../components/Pagination';
 
 const TABS = ['학생 정보', '기출 업로드', '문제 관리'];
+const Q_PAGE_SIZE = 20;
 
 // 컬럼 예시 데이터
 const SAMPLE_ROWS = [
@@ -374,7 +376,7 @@ const QUESTION_TYPES = [
 const DIFFICULTIES = ['LOW', 'MEDIUM', 'HIGH'];
 
 // 인라인 편집 행 컴포넌트
-function QuestionRow({q, onSave, onDelete}) {
+function QuestionRow({ q, selected, onToggle, onSave, onDelete }) {
     const [editing, setEditing] = useState(false);
     const [form, setForm] = useState({
         part: q.part,
@@ -391,7 +393,18 @@ function QuestionRow({q, onSave, onDelete}) {
     }
 
     return (
-        <tr className={`border-b text-sm ${editing ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+        <tr className={`border-b text-sm ${editing ? 'bg-blue-50' : selected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+            {/* 체크박스 */}
+            <td className="px-3 py-2 text-center">
+                <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={onToggle}
+                    className="w-4 h-4 accent-blue-600"
+                    onClick={e => e.stopPropagation()}
+                />
+            </td>
+
             {/* ID */}
             <td className="px-3 py-2 text-gray-400 text-xs">{q.id}</td>
 
@@ -501,6 +514,11 @@ function QuestionManagerTab() {
     const [questions, setQuestions] = useState([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+
+    // 선택
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const [bulkDeleting, setBulkDeleting] = useState(false);
 
     // 필터
     const [filterPart, setFilterPart] = useState('');
@@ -510,6 +528,7 @@ function QuestionManagerTab() {
 
     async function load() {
         setLoading(true);
+        setSelectedIds(new Set()); // 새로고침 시 선택 초기화
         try {
             const res = await getQuestions({
                 part: filterPart || undefined,
@@ -519,6 +538,7 @@ function QuestionManagerTab() {
             });
             setQuestions(res.data.data);
             setTotal(res.data.total);
+            setPage(1);
         } finally {
             setLoading(false);
         }
@@ -531,12 +551,63 @@ function QuestionManagerTab() {
     async function handleDelete(id) {
         if (!confirm('삭제하시겠습니까?')) return;
         await deleteQuestion(id);
+        setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
         load();
+    }
+
+    async function handleBulkDelete() {
+        if (!selectedIds.size) return;
+        if (!confirm(`선택한 ${selectedIds.size}개 문제를 삭제하시겠습니까?`)) return;
+        setBulkDeleting(true);
+        try {
+            await Promise.all([...selectedIds].map(id => deleteQuestion(id)));
+            load();
+        } finally {
+            setBulkDeleting(false);
+        }
+    }
+
+    // 페이지네이션
+    const totalPages   = Math.max(1, Math.ceil(questions.length / Q_PAGE_SIZE));
+    const pagedQuestions = questions.slice((page - 1) * Q_PAGE_SIZE, page * Q_PAGE_SIZE);
+
+    // 현재 페이지의 전체 선택 여부
+    const pageIds     = pagedQuestions.map(q => q.id);
+    const allPageSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.has(id));
+    const somePageSelected = pageIds.some(id => selectedIds.has(id));
+
+    function togglePageAll() {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (allPageSelected) {
+                pageIds.forEach(id => next.delete(id));
+            } else {
+                pageIds.forEach(id => next.add(id));
+            }
+            return next;
+        });
+    }
+
+    function toggleOne(id) {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    }
+
+    function selectAll() {
+        setSelectedIds(new Set(questions.map(q => q.id)));
+    }
+
+    function clearSelection() {
+        setSelectedIds(new Set());
     }
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            {/* 헤더 */}
+            <div className="flex items-center justify-between flex-wrap gap-2">
                 <h2 className="text-sm font-medium text-gray-700">전체 {total}문항</h2>
                 <button onClick={load}
                         className="text-xs px-3 py-1.5 border rounded hover:bg-gray-50">
@@ -567,40 +638,101 @@ function QuestionManagerTab() {
                        className="border rounded px-3 py-2 text-sm w-48"/>
             </div>
 
+            {/* 선택 액션 바 */}
+            {questions.length > 0 && (
+                <div className="flex items-center gap-3 flex-wrap bg-gray-50 border rounded-lg px-4 py-2">
+                    <span className="text-xs text-gray-500">
+                        {selectedIds.size > 0
+                            ? `${selectedIds.size}개 선택됨`
+                            : '문제를 선택하세요'}
+                    </span>
+                    <div className="flex gap-2 ml-auto">
+                        <button
+                            onClick={selectAll}
+                            className="text-xs px-3 py-1.5 border rounded hover:bg-white transition">
+                            전체 선택 ({questions.length})
+                        </button>
+                        {selectedIds.size > 0 && (
+                            <>
+                                <button
+                                    onClick={clearSelection}
+                                    className="text-xs px-3 py-1.5 border rounded hover:bg-white transition">
+                                    선택 해제
+                                </button>
+                                <button
+                                    onClick={handleBulkDelete}
+                                    disabled={bulkDeleting}
+                                    className="text-xs px-3 py-1.5 bg-red-500 text-white rounded
+                                        hover:bg-red-600 disabled:opacity-40 transition">
+                                    {bulkDeleting ? '삭제 중...' : `선택 삭제 (${selectedIds.size})`}
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* 테이블 */}
             {loading ? (
                 <p className="text-gray-400 text-sm">불러오는 중...</p>
             ) : (
-                <div className="bg-white rounded-xl border overflow-x-auto">
-                    <table className="w-full text-sm min-w-[900px]">
-                        <thead className="bg-gray-50 text-gray-500 text-xs uppercase border-b">
-                        <tr>
-                            <th className="px-3 py-3 text-left">ID</th>
-                            <th className="px-3 py-3 text-left">파트</th>
-                            <th className="px-3 py-3 text-left">유형</th>
-                            <th className="px-3 py-3 text-left">난이도</th>
-                            <th className="px-3 py-3 text-left">문제 내용</th>
-                            <th className="px-3 py-3 text-left">정답</th>
-                            <th className="px-3 py-3 text-center">중복 횟수</th>
-                            <th className="px-3 py-3 text-left">출처</th>
-                            <th className="px-3 py-3"></th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {questions.length === 0 ? (
+                <>
+                    <div className="bg-white rounded-xl border overflow-x-auto">
+                        <table className="w-full text-sm min-w-[960px]">
+                            <thead className="bg-gray-50 text-gray-500 text-xs uppercase border-b">
                             <tr>
-                                <td colSpan={9} className="px-3 py-8 text-center text-gray-400 text-sm">
-                                    문제가 없습니다.
-                                </td>
+                                <th className="px-3 py-3 text-center w-10">
+                                    <input
+                                        type="checkbox"
+                                        checked={allPageSelected}
+                                        ref={el => { if (el) el.indeterminate = somePageSelected && !allPageSelected; }}
+                                        onChange={togglePageAll}
+                                        className="w-4 h-4 accent-blue-600"
+                                        title="현재 페이지 전체 선택"
+                                    />
+                                </th>
+                                <th className="px-3 py-3 text-left">ID</th>
+                                <th className="px-3 py-3 text-left">파트</th>
+                                <th className="px-3 py-3 text-left">유형</th>
+                                <th className="px-3 py-3 text-left">난이도</th>
+                                <th className="px-3 py-3 text-left">문제 내용</th>
+                                <th className="px-3 py-3 text-left">정답</th>
+                                <th className="px-3 py-3 text-center">중복 횟수</th>
+                                <th className="px-3 py-3 text-left">출처</th>
+                                <th className="px-3 py-3"></th>
                             </tr>
-                        ) : (
-                            questions.map(q => (
-                                <QuestionRow key={q.id} q={q} onSave={load} onDelete={handleDelete}/>
-                            ))
-                        )}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                            {pagedQuestions.length === 0 ? (
+                                <tr>
+                                    <td colSpan={10} className="px-3 py-8 text-center text-gray-400 text-sm">
+                                        문제가 없습니다.
+                                    </td>
+                                </tr>
+                            ) : (
+                                pagedQuestions.map(q => (
+                                    <QuestionRow
+                                        key={q.id}
+                                        q={q}
+                                        selected={selectedIds.has(q.id)}
+                                        onToggle={() => toggleOne(q.id)}
+                                        onSave={load}
+                                        onDelete={handleDelete}
+                                    />
+                                ))
+                            )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <Pagination
+                        page={page}
+                        totalPages={totalPages}
+                        totalItems={questions.length}
+                        pageSize={Q_PAGE_SIZE}
+                        onChange={p => { setPage(p); setSelectedIds(new Set()); }}
+                    />
+                </>
             )}
         </div>
     );
