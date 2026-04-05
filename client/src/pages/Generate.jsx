@@ -1,20 +1,7 @@
 import {useEffect, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {generateBatch, getStudents} from '../api';
-
-const CLASS_NAME_OPTIONS = [
-    { value: '',           label: '전체 반' },
-    { value: 'TARGET_600', label: '600목표반' },
-    { value: 'TARGET_800', label: '800목표반' },
-    { value: 'HIGH_SCORE', label: '고득점반' },
-];
-const LEVEL_OPTIONS = [
-    { value: '',             label: '전체 레벨' },
-    { value: 'BEGINNER',     label: 'BEGINNER' },
-    { value: 'INTERMEDIATE', label: 'INTERMEDIATE' },
-    { value: 'ADVANCED',     label: 'ADVANCED' },
-    { value: 'EXPERT',       label: 'EXPERT' },
-];
+import { CLASS_NAME_OPTIONS, LEVEL_OPTIONS } from '../constants';
 
 const STATUS_ICON = {
     idle:    '⬜',
@@ -33,38 +20,6 @@ export default function Generate() {
     const [summary,   setSummary]   = useState(null);
 
     const navigate = useNavigate();
-
-    async function handleGenerate() {
-        if (!selected.size) return;
-        setLoading(true);
-        setSummary(null);
-
-        const init = {};
-        selected.forEach(id => { init[id] = { status: 'idle', name: students.find(s => s.id === id)?.name }; });
-        setProgress(init);
-
-        await generateBatch([...selected], (event) => {
-            if (event.type === 'start') {
-                setProgress(p => ({ ...p, [event.studentId]: { ...p[event.studentId], status: 'start' } }));
-            } else if (event.type === 'done') {
-                setProgress(p => ({ ...p, [event.studentId]: {
-                        ...p[event.studentId], status: 'done',
-                        workbookId: event.workbookId, bookUid: event.bookUid, summary: event.summary,
-                    }}));
-            } else if (event.type === 'error') {
-                setProgress(p => ({ ...p, [event.studentId]: {
-                        ...p[event.studentId], status: 'error', message: event.message,
-                    }}));
-            } else if (event.type === 'complete') {
-                setSummary(event);
-                setLoading(false);
-                // 완료 후 2초 뒤 주문 목록으로 이동
-                setTimeout(() => navigate('/orders'), 2000);
-            }
-        });
-    }
-
-
 
     useEffect(() => {
         getStudents({ className, level })
@@ -120,6 +75,7 @@ export default function Generate() {
             } else if (event.type === 'complete') {
                 setSummary(event);
                 setLoading(false);
+                setTimeout(() => navigate('/orders'), 2000);
             }
         });
     }
@@ -128,49 +84,49 @@ export default function Generate() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold mb-2"> 기출 생성</h1>
-            <p className="text-sm text-gray-500 mb-6">
+            <h1 className="text-2xl font-bold mb-2 dark:text-gray-100"> 기출 생성</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                 학생을 선택하면 AI가 개인 맞춤 문제집을 자동 생성합니다.
             </p>
 
             {/* 필터 */}
             <div className="flex flex-wrap gap-2 mb-4">
                 <select value={className} onChange={e => setClassName(e.target.value)}
-                        className="border rounded px-3 py-2 text-sm">
+                        className="border dark:border-gray-600 rounded px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100">
                     {CLASS_NAME_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
                 <select value={level} onChange={e => setLevel(e.target.value)}
-                        className="border rounded px-3 py-2 text-sm">
+                        className="border dark:border-gray-600 rounded px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100">
                     {LEVEL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
-                <span className="px-3 py-2 text-sm text-gray-500">
+                <span className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
           {selected.size}명 선택
         </span>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* 학생 선택 */}
-                <div className="bg-white rounded-xl border overflow-hidden">
-                    <div className="px-4 py-3 bg-gray-50 border-b flex items-center gap-2">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-hidden">
+                    <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b dark:border-gray-700 flex items-center gap-2">
                         <input type="checkbox"
                                checked={allSelected}
                                onChange={toggleAll}
                                className="w-4 h-4 accent-blue-600" />
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
               전체 선택 ({students.length}명)
             </span>
                     </div>
-                    <div className="divide-y max-h-[480px] overflow-y-auto">
+                    <div className="divide-y dark:divide-gray-700 max-h-[480px] overflow-y-auto">
                         {students.map(s => (
                             <label key={s.id}
-                                   className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer">
+                                   className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer">
                                 <input type="checkbox"
                                        checked={selected.has(s.id)}
                                        onChange={() => toggleOne(s.id)}
                                        className="w-4 h-4 accent-blue-600" />
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium truncate">{s.name}</p>
-                                    <p className="text-xs text-gray-400">
+                                    <p className="text-sm font-medium dark:text-gray-100 truncate">{s.name}</p>
+                                    <p className="text-xs text-gray-400 dark:text-gray-500">
                                         {s.classNameLabel} · {s.level} · {s.totalScore}점
                                     </p>
                                 </div>
@@ -197,7 +153,7 @@ export default function Generate() {
                     {/* 요약 */}
                     {summary ? (
                         <div className="space-y-3">
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-700">
+                            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4 text-sm text-green-700 dark:text-green-400">
                                 <p className="font-medium">✅ 생성 완료</p>
                                 <p>총 {summary.total}명 · 성공 {summary.succeeded}명 · 실패 {summary.failed}명</p>
                             </div>
@@ -211,7 +167,7 @@ export default function Generate() {
                                 setProgress({});
                                 setSelected(new Set());
                             }}
-                                    className="w-full py-2 border rounded text-sm text-gray-600 hover:bg-gray-50 transition">
+                                    className="w-full py-2 border dark:border-gray-600 rounded text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                                 새로 생성하기
                             </button>
                         </div>
@@ -226,21 +182,21 @@ export default function Generate() {
 
                     {/* 개별 진행 상태 */}
                     {Object.entries(progress).length > 0 && (
-                        <div className="bg-white rounded-xl border overflow-hidden">
-                            <div className="px-4 py-3 bg-gray-50 border-b">
-                                <p className="text-sm font-medium text-gray-700">진행 상태</p>
+                        <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-hidden">
+                            <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b dark:border-gray-700">
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">진행 상태</p>
                             </div>
-                            <div className="divide-y max-h-[360px] overflow-y-auto">
+                            <div className="divide-y dark:divide-gray-700 max-h-[360px] overflow-y-auto">
                                 {Object.entries(progress).map(([id, p]) => (
                                     <div key={id} className="px-4 py-3 flex items-start gap-3">
                                         <span className="text-lg mt-0.5">{STATUS_ICON[p.status]}</span>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium">{p.name}</p>
+                                            <p className="text-sm font-medium dark:text-gray-100">{p.name}</p>
                                             {p.status === 'start' && (
                                                 <p className="text-xs text-blue-500 animate-pulse">AI 분석 중...</p>
                                             )}
                                             {p.status === 'done' && (
-                                                <p className="text-xs text-gray-500 truncate">{p.summary}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{p.summary}</p>
                                             )}
                                             {p.status === 'error' && (
                                                 <p className="text-xs text-red-500">{p.message}</p>

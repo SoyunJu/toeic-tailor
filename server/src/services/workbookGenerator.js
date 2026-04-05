@@ -61,6 +61,14 @@ function ratioToCount(total, ratio) {
     };
 }
 
+function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
 async function fetchQuestions({ part, difficulty, count, excludeIds, questionType }) {
     if (count <= 0) return [];
 
@@ -71,11 +79,12 @@ async function fetchQuestions({ part, difficulty, count, excludeIds, questionTyp
         ...(questionType ? { questionType } : {}),
     };
 
-    return await prisma.question.findMany({
+    const pool = await prisma.question.findMany({
         where,
-        take:    count,
+        take: count * 3,
         orderBy: { id: 'asc' },
     });
+    return shuffle(pool).slice(0, count);
 }
 
 // DB에 있는 전체 문제 수 조회

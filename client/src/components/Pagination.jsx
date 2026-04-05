@@ -25,15 +25,15 @@ export default function Pagination({ page, totalPages, totalItems, pageSize, onC
 
     const btnBase     = 'w-8 h-8 rounded text-sm flex items-center justify-center transition';
     const btnActive   = btnBase + ' bg-blue-600 text-white font-semibold';
-    const btnInactive = btnBase + ' border text-gray-600 hover:bg-gray-100';
-    const btnDisabled = btnBase + ' text-gray-300 cursor-not-allowed';
+    const btnInactive = btnBase + ' border dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700';
+    const btnDisabled = btnBase + ' text-gray-300 dark:text-gray-600 cursor-not-allowed';
 
     const from = Math.min((page - 1) * pageSize + 1, totalItems);
     const to   = Math.min(page * pageSize, totalItems);
 
     return (
         <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-400 dark:text-gray-500">
                 {totalItems > 0 ? `${from}–${to} / 전체 ${totalItems}건` : '0건'}
             </span>
             <div className="flex items-center gap-1">
